@@ -1,0 +1,8 @@
+data/
+llama_model/
+.ipynb_checkpoint/
+.DS_Store
+venv/
+results/
+log/
+models/
