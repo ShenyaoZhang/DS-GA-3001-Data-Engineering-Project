@@ -1,0 +1,17 @@
+python src/main_cluster.py \
+  -sample_size 150 \
+  -filename "data/processed/train_inner_20news_rec_autos" \
+  -val_path "data/processed/val_20news_rec_autos.csv" \
+  -balance False \
+  -sampling "random" \
+  -filter_label True \
+  -model_finetune "bert-base-uncased" \
+  -labeling "qwen" \
+  -model "text" \
+  -baseline 0.5 \
+  -metric "f1_pos" \
+  -cluster_size 10 \
+  -target_class "rec.autos" \
+  -few_shot_path "prompts/few_shot_examples_rec_autos.json" \
+  -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
+  -max_iterations 4
