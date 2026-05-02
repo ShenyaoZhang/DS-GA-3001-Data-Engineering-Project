@@ -21,7 +21,7 @@ class BertFineTuner:
         self.run_clf = False
         self.learning_rate = learning_rate
         # self.weight_decay = None
-        self.weight_decay = 0.0
+        self.weight_decay = 0.00
         if dropout:
             model = BertForSequenceClassification.from_pretrained(model_name, num_labels=2)
             model.config.hidden_dropout_prob = dropout
@@ -29,6 +29,9 @@ class BertFineTuner:
         else:
             self.model = BertForSequenceClassification.from_pretrained(model_name, num_labels=2)
         self.model.to(self.device)
+        # Lower VRAM during fine-tuning (long texts + batch 32 OOMs on shared GPUs).
+        # self.model.gradient_checkpointing_disable()  # Original: no checkpointing
+        self.model.gradient_checkpointing_enable()
 
 
     def set_clf(self, set: bool):
@@ -122,13 +125,18 @@ class BertFineTuner:
         tokenized_data, data_collator = self.create_dataset(df, self.test_data)
 
         # Define training arguments
+        # Large batch + max_length=512 + full training_text often OOMs on 24GB if GPU is shared.
+        # per_device_train_batch_size=32,
+        # per_device_eval_batch_size=32,
+        use_fp16 = bool(torch.cuda.is_available())
         training_args = TrainingArguments(
             output_dir="results",
             eval_strategy="epoch",  # "epoch", "steps", or EvaluationStrategy.EPOCH
             save_strategy="epoch",
             metric_for_best_model="eval_accuracy",
-            per_device_train_batch_size=32,
-            per_device_eval_batch_size=32,
+            per_device_train_batch_size=8,
+            per_device_eval_batch_size=8,
+            gradient_accumulation_steps=4,
             num_train_epochs=20,
             learning_rate=self.learning_rate,
             weight_decay=self.weight_decay,
@@ -136,7 +144,9 @@ class BertFineTuner:
             logging_steps=10,
             push_to_hub=False,
             logging_dir="./logs",
-            load_best_model_at_end=True
+            load_best_model_at_end=True,
+            fp16=use_fp16,
+            bf16=False,
         )
         if still_unbalenced:
             print(f"using modified loss function")
@@ -231,19 +241,26 @@ class MyTrainer(Trainer):
             callbacks: Optional[List[Any]] = None,
             optimizers: Tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LambdaLR] = (None, None),
             preprocess_logits_for_metrics: Optional[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = None):
-        super().__init__(
+        super_kwargs = dict(
             model=model,
             args=args,
             data_collator=data_collator,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
-            tokenizer=tokenizer,
             model_init=model_init,
             compute_metrics=compute_metrics,
             callbacks=callbacks,
             optimizers=optimizers,
-            preprocess_logits_for_metrics=preprocess_logits_for_metrics
+            preprocess_logits_for_metrics=preprocess_logits_for_metrics,
         )
+        if tokenizer is not None:
+            # transformers >=4.46 renamed `tokenizer` -> `processing_class`; fall back if needed.
+            try:
+                super().__init__(processing_class=tokenizer, **super_kwargs)
+                return
+            except TypeError:
+                super_kwargs["tokenizer"] = tokenizer
+        super().__init__(**super_kwargs)
 
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         labels = inputs.pop("labels")

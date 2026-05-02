@@ -20,7 +20,7 @@ class ModelSampler:
 
         sampled_data = pd.DataFrame()
 
-        df = df[~df['id'].isin(self.selected_ids)]
+        df = df[~df['id'].astype(str).isin(self.selected_ids)]
         # Sample data from each cluster
         for cluster in unique_clusters:
             cluster_data = df[df['label_cluster'] == cluster]
@@ -34,8 +34,8 @@ class ModelSampler:
             sampled_data = pd.concat([sampled_data, sampled_cluster_data], ignore_index=True)
 
         # Add the IDs of sampled data to the selected_ids set
-        self.selected_ids.update(sampled_cluster_data['id'])
+        self.selected_ids.update(sampled_cluster_data['id'].astype(str))
         with open('selected_ids.txt', 'w') as f:
-            f.write('\n'.join(self.selected_ids))
+            f.write('\n'.join(str(x) for x in self.selected_ids))
 
         return sampled_data, "random"

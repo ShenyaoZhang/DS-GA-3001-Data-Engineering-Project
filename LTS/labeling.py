@@ -16,19 +16,13 @@ class Labeling:
         self.label_model = label_model
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
-    # def generate_prompt(self, title):
-    #     if self.label_model == "llama":
-    #         return self.generate_prompt_llama(title)
-    #     elif self.label_model=="gpt":
-    #         return self.generate_prompt_gpt(title)
-    #     else:
-    #         return None
     def generate_prompt(self, title):
         if self.label_model == "llama":
             return self.generate_prompt_llama(title)
         elif self.label_model == "gpt":
             return self.generate_prompt_gpt(title)
         elif self.label_model == "qwen":
+            # Same task text as GPT; formatting for the chat template happens in get_qwen_label.
             return self.generate_prompt_gpt(title)
         else:
             return None
@@ -109,19 +103,22 @@ Article:
             print("model Loaded")
         elif self.label_model == "gpt":
             self.model = OpenAI(api_key="YOUR_OPENAI_API_KEY")
-        elif self.label_model =="file":
-            self.model = None
         elif self.label_model == "qwen":
-            checkpoint = os.getenv("QWEN_MODEL_ID", "Qwen/Qwen2.5-7B-Instruct")
-            self.model = AutoModelForCausalLM.from_pretrained(
-                checkpoint,
-                torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-                device_map="auto",
-            )
-            self.tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+            # Local dir (e.g. ./qwen) or Hugging Face id, e.g. Qwen/Qwen2.5-1.5B-Instruct
+            checkpoint = os.environ.get("QWEN_MODEL_DIR", "Qwen/Qwen2.5-1.5B-Instruct")
+            dtype = torch.float16 if self.device.startswith("cuda") else torch.float32
+            self.tokenizer = AutoTokenizer.from_pretrained(checkpoint, trust_remote_code=True)
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
-            print(f"Qwen model loaded: {checkpoint}")
+            self.model = AutoModelForCausalLM.from_pretrained(
+                checkpoint,
+                dtype=dtype,
+                trust_remote_code=True,
+            ).to(self.device)
+            self.model.eval()
+            print(f"Qwen loaded from {checkpoint}")
+        elif self.label_model =="file":
+            self.model = None
 
 
     def predict_animal_product(self, row):
@@ -133,10 +130,10 @@ Article:
             return self.get_llama_label(row)
         elif self.label_model == "gpt":
             return self.get_gpt_label(row)
-        elif self.label_model == "file":
-            return self.get_file_label(row)
         elif self.label_model == "qwen":
             return self.get_qwen_label(row)
+        elif self.label_model == "file":
+            return self.get_file_label(row)
         else:
             raise ValueError("No model selected")
 
@@ -182,43 +179,6 @@ Article:
             )
         return response.choices[0].message.content
 
-    @staticmethod
-    def normalize_binary_label(text: str) -> str:
-        t = (text or "").strip().lower()
-        if "not earn" in t:
-            return "not earn"
-        if "earn" in t:
-            return "earn"
-        return "not earn"
-
-    def get_qwen_label(self, row):
-        prompt = row["text"]
-        messages = [
-            {"role": "system", "content": "Return only one label: earn or not earn."},
-            {"role": "user", "content": prompt},
-        ]
-        rendered = self.tokenizer.apply_chat_template(
-            messages, tokenize=False, add_generation_prompt=True
-        )
-
-        inputs = self.tokenizer(rendered, return_tensors="pt")
-        device = next(self.model.parameters()).device
-        inputs = {k: v.to(device) for k, v in inputs.items()}
-
-        with torch.inference_mode():
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=8,
-                do_sample=False,
-                temperature=0.0,
-                pad_token_id=self.tokenizer.eos_token_id,
-            )
-
-        answer = self.tokenizer.decode(
-            outputs[0][inputs["input_ids"].shape[1]:],
-            skip_special_tokens=True
-        )
-        return self.normalize_binary_label(answer)
 
     def get_llama_label(self, row):
         text = row["text"]
@@ -239,6 +199,32 @@ Article:
                     answer = 'not earn'  # Reuters default
         return answer
 
+    def get_qwen_label(self, row):
+        user_content = row["text"]
+        messages = [{"role": "user", "content": user_content}]
+        if hasattr(self.tokenizer, "apply_chat_template"):
+            prompt = self.tokenizer.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=True
+            )
+        else:
+            prompt = user_content
+        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+        prompt_len = inputs["input_ids"].shape[1]
+        with torch.inference_mode():
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=32,
+                do_sample=False,
+                pad_token_id=self.tokenizer.pad_token_id,
+            )
+        text_out = self.tokenizer.decode(
+            outputs[0][prompt_len:], skip_special_tokens=True
+        ).strip().lower()
+        if "not earn" in text_out[:32]:
+            return "not earn"
+        if text_out.startswith("earn") or text_out[:12].strip() == "earn":
+            return "earn"
+        return "not earn"
 
     def get_file_label(self, row):
         # raise NotImplementedError()  # Original: not implemented

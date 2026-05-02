@@ -25,7 +25,7 @@ class RandomSampler:
 
         sampled_data = []
 
-        df = df[~df['id'].isin(self.selected_ids)]
+        df = df[~df['id'].astype(str).isin(self.selected_ids)]
         if filter_label:
             if trainer.get_clf():
                 df["predicted_label"] = trainer.get_inference(df)
@@ -53,9 +53,9 @@ class RandomSampler:
         sampled_data = pd.concat(sampled_data, ignore_index=True)
 
         # Add the IDs of sampled data to the selected_ids set
-        self.selected_ids.update(sampled_data['id'])
+        self.selected_ids.update(sampled_data['id'].astype(str))
         with open('selected_ids.txt', 'w') as f:
-            f.write('\n'.join(self.selected_ids))
+            f.write('\n'.join(str(x) for x in self.selected_ids))
 
         return sampled_data, "random"
 

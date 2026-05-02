@@ -11,6 +11,7 @@ import json
 import gc
 import torch
 nltk.download('punkt')
+nltk.download('punkt_tab')
 
 import os
 from LDA import LDATopicModel
