@@ -17,8 +17,4 @@ wins.txt
 losses.txt
 positive_data.csv
 
-# Pipeline-generated artifacts (regenerated on each run)
-data_use_cases/*_lda.csv
-data_use_cases/*_data_labeled.csv
-data_use_cases/*_training_data.csv
-data_use_cases/*_model_results.json
+
