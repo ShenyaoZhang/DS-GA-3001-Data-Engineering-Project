@@ -232,6 +232,92 @@ in-context examples.
 
 ---
 
+## 🧮 Use Case 5: Reuters multi-class triage (Reuters-21578 + Qwen)
+
+The pipeline also supports **multi-class triage**: instead of one binary task,
+train a single classifier that maps each article to one of N Reuters topics
+(plus an optional `other` catch-all). Binary mode (above) is unchanged and
+still the default; multi-class is opt-in via `--task-type multiclass` and
+`-task_type multiclass`.
+
+Reuters articles can be tagged with multiple topics, so the prep script picks
+the **first matching label in your priority order**. Articles with no matching
+topic are placed in `--other-label other` (or dropped via `--no-other`).
+
+### Step 1 — Prepare a multi-class pool
+
+```bash
+# default top-5 + 'other'
+python scripts/prepare_reuters.py \
+  --split ModApte \
+  --task-type multiclass \
+  --labels "earn,acq,trade,crude,money-fx" \
+  --other-label "other"
+```
+
+Outputs (under `data_use_cases/`):
+
+- `reuters_modapte_multiclass_6cls_train.csv` — pool (`id, title, description, label, label_text`)
+- `reuters_modapte_multiclass_6cls_validation.csv` — gold validation
+- `reuters_modapte_multiclass_6cls_smoke_train.csv` / `_smoke_validation.csv`
+
+The script prints the resolved class list and a one-liner you can copy into the
+`main_cluster.py` invocation:
+
+```text
+[prepare_reuters] use this with main_cluster.py:
+    -task_type "multiclass" -class_labels "earn,acq,trade,crude,money-fx,other"
+```
+
+### Step 2 — Run LTS in multi-class mode
+
+```bash
+export QWEN_MODEL_DIR="Qwen/Qwen2.5-1.5B-Instruct"
+
+python main_cluster.py \
+  -sample_size 200 \
+  -filename "data_use_cases/reuters_modapte_multiclass_6cls_train" \
+  -val_path "data_use_cases/reuters_modapte_multiclass_6cls_validation.csv" \
+  -balance False \
+  -sampling "thompson" \
+  -filter_label False \
+  -model_finetune "bert-base-uncased" \
+  -labeling "qwen" \
+  -model "text" \
+  -baseline 0.5 \
+  -metric "f1" \
+  -cluster_size 10 \
+  -task_type "multiclass" \
+  -class_labels "earn,acq,trade,crude,money-fx,other" \
+  -task_description "the title (and possibly a short excerpt) of a Reuters news article. Pick the single best matching topic from the list of labels."
+```
+
+### What changes vs binary mode
+
+- **BERT** is configured with `num_labels = len(class_labels)` (here 6) instead
+  of 2. Saved checkpoints and `update_model` reload at the same width.
+- The Qwen prompt asks for **one** label from the list; the parser
+  case-insensitively matches the longest label that appears in the model's
+  output, and falls back to the last class (typically `other`) on garbage.
+- **Metrics** include both **`eval_f1` (weighted)** and **`eval_f1_macro`**.
+  Weighted F1 is what the bandit reward uses (matches binary mode); macro F1 is
+  the better number to report when classes are imbalanced.
+- **Balance / positive-carry-over** logic from binary mode is **disabled**: it
+  hard-codes `label == 1` vs `label == 0` semantics. `-balance True` is silently
+  ignored, and `positive_data.csv` is not written.
+- The weighted-loss `MyTrainer` path is **not used** in multi-class (the
+  built-in HF `Trainer` with uniform cross-entropy is used instead).
+
+### Coexisting with your binary results
+
+Multi-class outputs use a **different filename stem**
+(`reuters_modapte_multiclass_*`), so existing binary artifacts
+(`reuters_modapte_earn_*` CSVs, `*_model_results.json`, saved BERT checkpoints,
+`positive_data.csv`) are **not overwritten**. You can keep both sets side by
+side and compare them in your write-up.
+
+---
+
 📫 Contact
 For questions or feedback, please open an issue or reach out via the contact information provided in the paper.
 

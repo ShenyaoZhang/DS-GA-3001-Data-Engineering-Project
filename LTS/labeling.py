@@ -56,9 +56,18 @@ class Labeling:
         negative_label: Optional[str] = None,
         task_description: Optional[str] = None,
         examples: Optional[List[Tuple[str, str]]] = None,
+        class_labels: Optional[List[str]] = None,
     ):
         self.label_model = label_model
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        # Multi-class mode is enabled iff `class_labels` is provided (>=2 labels).
+        # In that mode positive_label / negative_label are ignored for prompting,
+        # but kept around so legacy callers don't crash.
+        self.class_labels: Optional[List[str]] = (
+            [c.strip() for c in class_labels if c and c.strip()]
+            if class_labels
+            else None
+        )
         self.positive_label = (
             positive_label
             or os.environ.get("LTS_POSITIVE_LABEL")
@@ -74,14 +83,29 @@ class Labeling:
             or os.environ.get("LTS_TASK_DESCRIPTION")
             or DEFAULT_TASK_DESCRIPTION
         )
-        self.task_description = raw_desc.format(
-            pos=self.positive_label, neg=self.negative_label
-        )
+        if self.is_multiclass:
+            # In multi-class mode {pos}/{neg} placeholders are not meaningful.
+            # Use the description as-is unless the caller passed a custom one.
+            self.task_description = raw_desc
+        else:
+            self.task_description = raw_desc.format(
+                pos=self.positive_label, neg=self.negative_label
+            )
         self.examples = (
             examples
             or _load_examples_from_env()
             or DEFAULT_EXAMPLES
         )
+
+    @property
+    def is_multiclass(self) -> bool:
+        return self.class_labels is not None and len(self.class_labels) >= 2
+
+    @property
+    def labels_lower(self) -> List[str]:
+        if self.is_multiclass:
+            return [c.lower() for c in self.class_labels]
+        return [self.pos, self.neg]
 
     @property
     def pos(self) -> str:
@@ -115,13 +139,17 @@ class Labeling:
             lines.append(f"{idx}. Article: {ex_title}\nLabel: {ex_label}\n")
         return "\n".join(lines)
 
+    def _label_choice_phrase(self) -> str:
+        if self.is_multiclass:
+            return "Return only one of these labels: " + ", ".join(self.class_labels) + "."
+        return f"Return only one of the two labels: {self.positive_label} or {self.negative_label}."
+
     def generate_prompt_gpt(self, title):
         next_idx = len(self.examples) + 1
         return (
             "You are a labeling tool to create labels for a text classification task.\n"
             f"I will provide {self.task_description}\n"
-            f"Return only one of the two labels: {self.positive_label} or "
-            f"{self.negative_label}. No explanation is necessary.\n\n"
+            f"{self._label_choice_phrase()} No explanation is necessary.\n\n"
             "Examples:\n"
             f"{self._examples_block()}\n"
             f"{next_idx}. Article: {title}\nLabel:\n"
@@ -131,8 +159,7 @@ class Labeling:
         return (
             "You are a labeling tool for a text classification task.\n"
             f"I will provide {self.task_description}\n"
-            f"Return only one of the two labels: {self.positive_label} or "
-            f"{self.negative_label}.\nArticle:\n"
+            f"{self._label_choice_phrase()}\nArticle:\n"
         )
 
     def set_model(self):
@@ -221,6 +248,25 @@ class Labeling:
         return response.choices[0].message.content
 
 
+    def _default_label(self) -> str:
+        # Used when the model output cannot be parsed into a known label.
+        if self.is_multiclass:
+            for cand in ("other", self.class_labels[-1]):
+                if cand.lower() in self.labels_lower:
+                    return cand.lower()
+            return self.labels_lower[0]
+        return self.neg
+
+    def _match_label(self, text_out: str) -> str:
+        """Pick the longest matching label from `text_out` (case-insensitive)."""
+        # Sort by length so 'not earn' wins over 'earn', and 'money-fx' wins over 'money'.
+        labels = sorted(self.labels_lower, key=len, reverse=True)
+        head = text_out[:128]
+        for lab in labels:
+            if lab and lab in head:
+                return lab
+        return self._default_label()
+
     def get_llama_label(self, row):
         text = row["text"]
         inputs = self.tokenizer(text, return_tensors="pt").to(self.device)
@@ -231,11 +277,10 @@ class Labeling:
             try:
                 answer = results.split("Response:\n")[2].split("\n")[0]
             except Exception:
-                # Handle IndexError separately
                 try:
                     answer = results.split("Response:\n")[1].split("\n")[0]
                 except Exception:
-                    answer = self.negative_label
+                    answer = self._default_label()
         return answer
 
     def get_qwen_label(self, row):
@@ -259,15 +304,19 @@ class Labeling:
         text_out = self.tokenizer.decode(
             outputs[0][prompt_len:], skip_special_tokens=True
         ).strip().lower()
-        # Match the more specific (longer) label first so 'not earn' wins over 'earn'
-        # when the model emits 'not earn'.
-        labels = sorted([self.pos, self.neg], key=len, reverse=True)
-        for lab in labels:
-            if lab and lab in text_out[:64]:
-                return lab
-        return self.neg
+        return self._match_label(text_out)
 
     def get_file_label(self, row):
+        # Multi-class: integer label is the index into self.class_labels.
+        if self.is_multiclass:
+            if "label" in row and pd.notna(row["label"]):
+                idx = int(row["label"])
+                if 0 <= idx < len(self.class_labels):
+                    return self.class_labels[idx].lower()
+            if "label_text" in row and pd.notna(row["label_text"]):
+                return str(row["label_text"]).strip().lower()
+            return self._default_label()
+        # Binary: 0/1 -> negative/positive.
         if "label" in row and pd.notna(row["label"]):
             return self.pos if int(row["label"]) == 1 else self.neg
         # Backward compat: prepare_reuters previously emitted label_<topic> columns.

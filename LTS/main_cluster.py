@@ -99,6 +99,14 @@ def main():
     parser.add_argument('-task_description', type=str, required=False, default=None,
                         help="Optional task description; use {pos}/{neg} placeholders for the labels")
 
+    # Task type: 'binary' (default, current behavior) or 'multiclass'.
+    parser.add_argument('-task_type', type=str, required=False, default="binary",
+                        choices=["binary", "multiclass"],
+                        help="Triage task type: binary (default) or multiclass")
+    parser.add_argument('-class_labels', type=str, required=False, default=None,
+                        help="Multiclass mode: comma-separated label names in class-id order, "
+                             "e.g. 'earn,acq,trade,crude,money-fx,other'")
+
 
     # Parse runtime configuration.
     args = parser.parse_args()
@@ -119,16 +127,32 @@ def main():
     validation_path = args.val_path
     cluster_size = args.cluster_size
 
-    # Resolve binary label strings (CLI > env > default).
+    # Resolve task config (CLI > env > default).
     from labeling import (
         DEFAULT_POSITIVE_LABEL,
         DEFAULT_NEGATIVE_LABEL,
         DEFAULT_TASK_DESCRIPTION,
     )
+    task_type = (args.task_type or "binary").strip().lower()
     positive_label = (args.positive_label or os.environ.get("LTS_POSITIVE_LABEL") or DEFAULT_POSITIVE_LABEL).strip()
     negative_label = (args.negative_label or os.environ.get("LTS_NEGATIVE_LABEL") or DEFAULT_NEGATIVE_LABEL).strip()
     task_description = args.task_description or os.environ.get("LTS_TASK_DESCRIPTION") or DEFAULT_TASK_DESCRIPTION
-    print(f"[LTS] task: positive='{positive_label}' / negative='{negative_label}'")
+
+    class_labels: list[str] = []
+    if task_type == "multiclass":
+        raw_labels = args.class_labels or os.environ.get("LTS_CLASS_LABELS") or ""
+        class_labels = [c.strip() for c in raw_labels.split(",") if c.strip()]
+        if len(class_labels) < 2:
+            raise ValueError(
+                "task_type=multiclass requires -class_labels with at least 2 comma-separated labels."
+            )
+        num_labels = len(class_labels)
+        label_to_id = {name.lower(): idx for idx, name in enumerate(class_labels)}
+        print(f"[LTS] task=multiclass classes={class_labels} (num_labels={num_labels})")
+    else:
+        num_labels = 2
+        label_to_id = {}
+        print(f"[LTS] task=binary positive='{positive_label}' / negative='{negative_label}'")
 
 
     # Text cleaner used before topic clustering.
@@ -169,7 +193,7 @@ def main():
 
     # Initialize downstream learner (currently text-only in this repo).
     if model == "text":
-        trainer = BertFineTuner(model_finetune, None, validation)
+        trainer = BertFineTuner(model_finetune, None, validation, num_labels=num_labels)
     else:
         raise ValueError("Currently only text model is supported")
 
@@ -195,13 +219,20 @@ def main():
                 positive_label=positive_label,
                 negative_label=negative_label,
                 task_description=task_description,
+                class_labels=class_labels if task_type == "multiclass" else None,
             )
             labeler.set_model()
             df = labeler.generate_inference_data(sample_data, 'clean_title')
             print("df for inference created")
             df["answer"] = df.apply(lambda x: labeler.predict_animal_product(x), axis=1)
             df["answer"] = df["answer"].str.strip().str.lower()
-            df["label"] = np.where(df["answer"] == positive_label.lower(), 1, 0)
+            if task_type == "multiclass":
+                # Map the textual answer to a class id; unknown answers fall back to
+                # the last class (typically 'other') so training never sees NaN labels.
+                fallback_id = num_labels - 1
+                df["label"] = df["answer"].map(label_to_id).fillna(fallback_id).astype(int)
+            else:
+                df["label"] = np.where(df["answer"] == positive_label.lower(), 1, 0)
             if labeling == "qwen":
                 del labeler.model
                 del labeler.tokenizer
@@ -229,31 +260,31 @@ def main():
 
         # ADD POSITIVE DATA IF AVAILABLE
 
-        # Carry forward positives from previous failed rounds to reduce rare-class starvation.
-        if os.path.exists('positive_data.csv'):
-            pos = pd.read_csv('positive_data.csv')
-            df = pd.concat([df, pos]).sample(frac=1)
-            print(f"adding positive data: {df['label'].value_counts()}")
-        if balance:
-            # Optional light undersampling: cap majority class to 2x minority class.
-            if len(df[df["label"]==1]) > 0:
-                unbalanced = len(df[df["label"]==0]) / len(df[df["label"]==1]) > 2
-                if unbalanced:
-                    label_counts = df["label"].value_counts()
-                    # Determine the number of samples to keep for each label
-                    min_count = min(label_counts)
-                    balanced_df = pd.concat([
-                        df[df["label"] == 0].sample(min_count*2),
-                        df[df["label"] == 1].sample(min_count)
-                    ])
-
-                    # Shuffle the rows
-                    df = balanced_df.sample(frac=1).reset_index(drop=True)
-                    print(f"Balanced data: {df.label.value_counts()}")
-            # else:
-                # if i == 0: # if this is the first model training
-                # unbalanced = True
-                # print("No positive samples to balance with.")
+        if task_type == "binary":
+            # Carry forward positives from previous failed rounds to reduce rare-class starvation.
+            if os.path.exists('positive_data.csv'):
+                pos = pd.read_csv('positive_data.csv')
+                df = pd.concat([df, pos]).sample(frac=1)
+                print(f"adding positive data: {df['label'].value_counts()}")
+            if balance:
+                # Optional light undersampling: cap majority class to 2x minority class.
+                if len(df[df["label"] == 1]) > 0:
+                    unbalanced = len(df[df["label"] == 0]) / len(df[df["label"] == 1]) > 2
+                    if unbalanced:
+                        label_counts = df["label"].value_counts()
+                        min_count = min(label_counts)
+                        balanced_df = pd.concat([
+                            df[df["label"] == 0].sample(min_count * 2),
+                            df[df["label"] == 1].sample(min_count)
+                        ])
+                        df = balanced_df.sample(frac=1).reset_index(drop=True)
+                        print(f"Balanced data: {df.label.value_counts()}")
+        else:
+            # Multi-class: skip the binary-specific positive carry-over and 1:2
+            # rebalance heuristic. (Could be extended with per-class capping if
+            # needed for very skewed multi-class tasks.)
+            if balance:
+                print("[LTS] -balance is ignored in multiclass mode (no binary majority class)")
         ## FINE TUNE MODEL
 
         # 3) Train candidate model and compare against current baseline metric.
@@ -269,10 +300,14 @@ def main():
             print(f"Starting with metric {metric} baseline {baseline}")
         print(f"Starting training")
 
-        try:
-            still_unbalenced = len(df[df["label"]==0]) / len(df[df["label"]==1])  >= 2
-        except Exception:
-            still_unbalenced = True
+        if task_type == "binary":
+            try:
+                still_unbalenced = len(df[df["label"] == 0]) / len(df[df["label"] == 1]) >= 2
+            except Exception:
+                still_unbalenced = True
+        else:
+            # Multi-class: don't apply the binary [0.2, 0.8] reweighting trick.
+            still_unbalenced = False
         print(f"Unbalanced? {still_unbalenced}")
 
         results, huggingface_trainer = trainer.train_data(df, still_unbalenced)
@@ -298,16 +333,16 @@ def main():
                 # data.to_csv("data_w_predictions.csv", index=False)
             ## save model results
         else:
-            # 4b) No improvement: roll back and retain only positives for a future retry.
-            # back to initial model
+            # 4b) No improvement: roll back to the previous model.
             trainer.update_model(model_name, baseline, save_model=False)
-            # save positive sample
-            if os.path.exists('positive_data.csv'):
-                positive = pd.read_csv("positive_data.csv")
-                df = df[df["label"]==1]
-                df = pd.concat([df, positive])
-                df = df.drop_duplicates()
-            df[df["label"]==1].to_csv("positive_data.csv", index=False)
+            if task_type == "binary":
+                # Persist positives so the next round can re-mix them in.
+                if os.path.exists('positive_data.csv'):
+                    positive = pd.read_csv("positive_data.csv")
+                    df = df[df["label"] == 1]
+                    df = pd.concat([df, positive])
+                    df = df.drop_duplicates()
+                df[df["label"] == 1].to_csv("positive_data.csv", index=False)
 
 
         # Log per-cluster/per-round metrics for analysis and reproducibility.

@@ -3,24 +3,27 @@
 Input files live under data/archive/ (ModApte_train.csv, ModApte_test.csv, ...).
 If only data/archive.zip exists, this script auto-extracts it on first run.
 
-Output is written to data_use_cases/ with the columns expected by main_cluster.py:
+Two task types are supported (--task-type):
 
-  - Pool CSV (used as -filename, code appends ".csv"):
-        id, title, description, label, label_<topic>
-    The 'label' column is the gold binary label (1 if --label topic is in
-    the article's topics else 0). LTS does not need it for -labeling qwen
-    (Qwen will pseudo-label), but it is useful for diagnostics and for the
-    -labeling file oracle baseline. 'label_<topic>' is kept for backward
-    compatibility with older runs.
+  binary (default)
+    Pool CSV  : id, title, description, label, label_<topic>
+                'label' = 1 if the --label topic is in the article's topics else 0.
+                'label_<topic>' is kept for backward compatibility.
+    Validation: id, title, description, label
 
-  - Validation CSV (used as -val_path, full path):
-        id, title, description, label
-    'label' is the same binary; this is what fine_tune.py evaluates against.
+  multiclass
+    Pool CSV  : id, title, description, label, label_text
+                'label' is an integer index into --labels (0..N-1). The first
+                label in --labels that matches an article's topics is assigned
+                (priority order = the order you pass them in). If no listed
+                label matches, the article gets the --other-label class
+                (default 'other'); pass --no-other to drop those rows.
+    Validation: id, title, description, label, label_text
 
 A small "_smoke" subset is also written so a fast end-to-end run is possible.
 
 Use --list-topics to see the most frequent Reuters topics in the train split
-(handy when picking a target class for a new triage experiment).
+(handy when picking targets for a new triage experiment).
 """
 
 from __future__ import annotations
@@ -94,25 +97,64 @@ def has_label(topics: list[str], target: str) -> int:
     return int(target in topics)
 
 
-def build_frame(src_csv: Path, target_label: str, max_desc_chars: int) -> pd.DataFrame:
-    raw = pd.read_csv(src_csv)
+def _common_columns(raw: pd.DataFrame, max_desc_chars: int) -> pd.DataFrame:
     raw = raw.dropna(subset=["title"]).copy()
     raw["title"] = raw["title"].apply(lambda t: _decode_text(t, 0))
     raw = raw[raw["title"].str.len() > 0]
-
     raw["topics_list"] = raw["topics"].apply(parse_topics)
+    raw["id"] = raw["new_id"].apply(_clean_id)
+    body_src = raw["text"] if "text" in raw.columns else pd.Series([""] * len(raw))
+    raw["description"] = body_src.apply(lambda b: _decode_text(b, max_desc_chars))
+    return raw
+
+
+def build_frame(src_csv: Path, target_label: str, max_desc_chars: int) -> pd.DataFrame:
+    raw = pd.read_csv(src_csv)
+    raw = _common_columns(raw, max_desc_chars)
+
     label_col = f"label_{target_label.lower().replace(' ', '_')}"
     raw["label"] = raw["topics_list"].apply(lambda ts: has_label(ts, target_label))
     raw[label_col] = raw["label"]
 
-    raw["id"] = raw["new_id"].apply(_clean_id)
-
-    body_src = raw["text"] if "text" in raw.columns else pd.Series([""] * len(raw))
-    raw["description"] = body_src.apply(lambda b: _decode_text(b, max_desc_chars))
-
     cols = ["id", "title", "description", "label", label_col]
     out = raw[cols].drop_duplicates(subset=["id"])
     return out.reset_index(drop=True)
+
+
+def assign_multiclass(topics: list[str], priority: list[str], other_label: str | None) -> str | None:
+    """Return the first label from `priority` present in `topics`, else `other_label`.
+
+    If `other_label` is None (i.e. --no-other), articles with no matching topic
+    are dropped (caller filters out None).
+    """
+    for cand in priority:
+        if cand in topics:
+            return cand
+    return other_label
+
+
+def build_frame_multiclass(
+    src_csv: Path,
+    priority: list[str],
+    other_label: str | None,
+    max_desc_chars: int,
+) -> tuple[pd.DataFrame, list[str]]:
+    raw = pd.read_csv(src_csv)
+    raw = _common_columns(raw, max_desc_chars)
+    raw["label_text"] = raw["topics_list"].apply(
+        lambda ts: assign_multiclass(ts, priority, other_label)
+    )
+    raw = raw[raw["label_text"].notna()].copy()
+
+    final_classes = list(priority)
+    if other_label is not None and other_label not in final_classes:
+        final_classes.append(other_label)
+    label_to_id = {name: idx for idx, name in enumerate(final_classes)}
+    raw["label"] = raw["label_text"].map(label_to_id).astype(int)
+
+    cols = ["id", "title", "description", "label", "label_text"]
+    out = raw[cols].drop_duplicates(subset=["id"]).reset_index(drop=True)
+    return out, final_classes
 
 
 def write_pool_and_validation(
@@ -120,11 +162,14 @@ def write_pool_and_validation(
     test_df: pd.DataFrame,
     out_dir: Path,
     stem: str,
+    keep_columns: list[str] | None = None,
 ) -> dict[str, Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     pool_path = out_dir / f"{stem}_train.csv"
     val_path = out_dir / f"{stem}_validation.csv"
-    val_df = test_df[["id", "title", "description", "label"]]
+    if keep_columns is None:
+        keep_columns = ["id", "title", "description", "label"]
+    val_df = test_df[keep_columns]
     train_df.to_csv(pool_path, index=False)
     val_df.to_csv(val_path, index=False)
     return {"pool": pool_path, "validation": val_path}
@@ -141,6 +186,17 @@ def make_smoke_subset(
         n=min(n_pool, len(train_df)), random_state=seed
     ).tolist()
     pool_smoke = train_df.iloc[rng].reset_index(drop=True)
+
+    # For multi-class label is integer >=0; treat any non-zero as 'minority'
+    # for the validation smoke split, but try to cover every class at least once.
+    if test_df["label"].nunique() > 2:
+        per_class_n = max(1, n_val // test_df["label"].nunique())
+        parts = []
+        for cls in sorted(test_df["label"].unique()):
+            sub = test_df[test_df["label"] == cls]
+            parts.append(sub.sample(min(len(sub), per_class_n), random_state=seed))
+        val_smoke = pd.concat(parts).sample(frac=1, random_state=seed).reset_index(drop=True)
+        return pool_smoke, val_smoke
 
     pos = test_df[test_df["label"] == 1]
     neg = test_df[test_df["label"] == 0]
@@ -168,33 +224,45 @@ def list_topics(src_csv: Path, top_k: int) -> None:
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--split", default="ModApte", choices=["ModApte", "ModHayes", "ModLewis"])
+    p.add_argument("--task-type", default="binary", choices=["binary", "multiclass"],
+                   help="Triage task type: binary (default) or multiclass")
     p.add_argument("--label", default="earn",
-                   help="Reuters topic to use as positive class (e.g. earn, trade, acq, money-fx, crude)")
+                   help="Binary mode: Reuters topic to use as positive class (e.g. earn, trade, acq)")
+    p.add_argument("--labels", default=None,
+                   help="Multiclass mode: comma-separated topics in priority order, "
+                        "e.g. 'earn,acq,trade,crude,money-fx'")
+    p.add_argument("--other-label", default="other",
+                   help="Multiclass mode: name for the catch-all class (default: 'other')")
+    p.add_argument("--no-other", action="store_true",
+                   help="Multiclass mode: drop articles that don't match any --labels topic "
+                        "instead of putting them in --other-label")
     p.add_argument("--max-desc-chars", type=int, default=1500,
                    help="Truncate article body for the description column (0 = keep full)")
     p.add_argument("--smoke-pool", type=int, default=500)
     p.add_argument("--smoke-val", type=int, default=200)
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--out-stem", default=None,
-                   help="Override output filename stem (default: reuters_{split_lower}_{label})")
+                   help="Override output filename stem "
+                        "(default binary: reuters_{split_lower}_{label}; "
+                        "default multiclass: reuters_{split_lower}_multiclass_{N}cls)")
     p.add_argument("--list-topics", type=int, nargs="?", const=20, default=0,
                    help="Print the top-N topics in the train split and exit (default N=20)")
     return p.parse_args()
 
 
-def main() -> None:
-    args = parse_args()
-    ensure_archive_extracted()
+def _split_labels(raw: str | None) -> list[str]:
+    if not raw:
+        return []
+    return [tok.strip() for tok in raw.split(",") if tok.strip()]
 
-    train_csv = ARCHIVE_DIR / f"{args.split}_train.csv"
-    test_csv = ARCHIVE_DIR / f"{args.split}_test.csv"
-    if not train_csv.exists() or not test_csv.exists():
-        raise SystemExit(f"Missing input under {ARCHIVE_DIR}: {train_csv.name} / {test_csv.name}")
 
-    if args.list_topics:
-        list_topics(train_csv, args.list_topics)
-        return
+def _print_class_distribution(df: pd.DataFrame, classes: list[str], name: str) -> None:
+    counts = df["label"].value_counts().to_dict()
+    parts = [f"{cls}={counts.get(idx, 0)}" for idx, cls in enumerate(classes)]
+    print(f"[prepare_reuters] {name} class counts: " + ", ".join(parts))
 
+
+def _run_binary(args: argparse.Namespace, train_csv: Path, test_csv: Path) -> None:
     print(f"[prepare_reuters] reading {train_csv.name} and {test_csv.name}")
     train_df = build_frame(train_csv, args.label, args.max_desc_chars)
     test_df = build_frame(test_csv, args.label, args.max_desc_chars)
@@ -220,6 +288,61 @@ def main() -> None:
           f"pos={int(pool_smoke['label'].sum())})")
     print(f"[prepare_reuters] smoke val  -> {smoke_paths['validation']}  ({len(val_smoke)} rows, "
           f"pos={int(val_smoke['label'].sum())})")
+
+
+def _run_multiclass(args: argparse.Namespace, train_csv: Path, test_csv: Path) -> None:
+    priority = _split_labels(args.labels)
+    if len(priority) < 2:
+        raise SystemExit(
+            "--task-type multiclass requires at least 2 labels via --labels "
+            "(comma-separated, priority order)."
+        )
+    other_label = None if args.no_other else args.other_label
+
+    print(f"[prepare_reuters] reading {train_csv.name} and {test_csv.name}")
+    train_df, classes = build_frame_multiclass(train_csv, priority, other_label, args.max_desc_chars)
+    test_df, _ = build_frame_multiclass(test_csv, priority, other_label, args.max_desc_chars)
+
+    stem = args.out_stem or f"reuters_{args.split.lower()}_multiclass_{len(classes)}cls"
+    keep_cols = ["id", "title", "description", "label", "label_text"]
+    paths = write_pool_and_validation(train_df, test_df, OUT_DIR, stem, keep_columns=keep_cols)
+    print(f"[prepare_reuters] classes: {classes}")
+    print(f"[prepare_reuters] pool       -> {paths['pool']}  ({len(train_df)} rows)")
+    _print_class_distribution(train_df, classes, "pool")
+    print(f"[prepare_reuters] validation -> {paths['validation']}  ({len(test_df)} rows)")
+    _print_class_distribution(test_df, classes, "validation")
+
+    pool_smoke, val_smoke = make_smoke_subset(
+        train_df, test_df, args.smoke_pool, args.smoke_val, args.seed
+    )
+    smoke_paths = write_pool_and_validation(
+        pool_smoke, val_smoke, OUT_DIR, f"{stem}_smoke", keep_columns=keep_cols
+    )
+    print(f"[prepare_reuters] smoke pool -> {smoke_paths['pool']}  ({len(pool_smoke)} rows)")
+    _print_class_distribution(pool_smoke, classes, "smoke pool")
+    print(f"[prepare_reuters] smoke val  -> {smoke_paths['validation']}  ({len(val_smoke)} rows)")
+    _print_class_distribution(val_smoke, classes, "smoke val")
+    print("[prepare_reuters] use this with main_cluster.py:")
+    print(f'    -task_type "multiclass" -class_labels "{",".join(classes)}"')
+
+
+def main() -> None:
+    args = parse_args()
+    ensure_archive_extracted()
+
+    train_csv = ARCHIVE_DIR / f"{args.split}_train.csv"
+    test_csv = ARCHIVE_DIR / f"{args.split}_test.csv"
+    if not train_csv.exists() or not test_csv.exists():
+        raise SystemExit(f"Missing input under {ARCHIVE_DIR}: {train_csv.name} / {test_csv.name}")
+
+    if args.list_topics:
+        list_topics(train_csv, args.list_topics)
+        return
+
+    if args.task_type == "binary":
+        _run_binary(args, train_csv, test_csv)
+    else:
+        _run_multiclass(args, train_csv, test_csv)
 
 
 if __name__ == "__main__":

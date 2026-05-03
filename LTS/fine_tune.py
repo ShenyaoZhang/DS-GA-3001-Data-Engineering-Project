@@ -10,7 +10,15 @@ import pandas as pd
 from torch import nn
 
 class BertFineTuner:
-    def __init__(self, model_name: Optional[str], training_data: Optional[pd.DataFrame], test_data: Optional[pd.DataFrame], learning_rate=2e-5, dropout=0.2):
+    def __init__(
+        self,
+        model_name: Optional[str],
+        training_data: Optional[pd.DataFrame],
+        test_data: Optional[pd.DataFrame],
+        learning_rate: float = 2e-5,
+        dropout: float = 0.2,
+        num_labels: int = 2,
+    ):
         self.base_model = model_name
         self.tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -22,12 +30,13 @@ class BertFineTuner:
         self.learning_rate = learning_rate
         # self.weight_decay = None
         self.weight_decay = 0.00
+        self.num_labels = int(num_labels)
         if dropout:
-            model = BertForSequenceClassification.from_pretrained(model_name, num_labels=2)
+            model = BertForSequenceClassification.from_pretrained(model_name, num_labels=self.num_labels)
             model.config.hidden_dropout_prob = dropout
             self.model = model
         else:
-            self.model = BertForSequenceClassification.from_pretrained(model_name, num_labels=2)
+            self.model = BertForSequenceClassification.from_pretrained(model_name, num_labels=self.num_labels)
         self.model.to(self.device)
         # Lower VRAM during fine-tuning (long texts + batch 32 OOMs on shared GPUs).
         # self.model.gradient_checkpointing_disable()  # Original: no checkpointing
@@ -108,15 +117,19 @@ class BertFineTuner:
 
         accuracy = accuracy_score(labels, preds)
 
-        precision = precision_score(labels, preds, average='weighted')
-        recall = recall_score(labels, preds, average='weighted')
-        f1 = f1_score(labels, preds, average='weighted')
+        # `weighted` is what the original repo used (good for binary). For multi-class
+        # macro is also reported so imbalanced classes don't get hidden by one big bucket.
+        precision = precision_score(labels, preds, average='weighted', zero_division=0)
+        recall = recall_score(labels, preds, average='weighted', zero_division=0)
+        f1 = f1_score(labels, preds, average='weighted', zero_division=0)
+        f1_macro = f1_score(labels, preds, average='macro', zero_division=0)
 
         return {
             'accuracy': accuracy,
             'precision': precision,
             'recall': recall,
-            'f1': f1
+            'f1': f1,
+            'f1_macro': f1_macro,
         }
 
     def train_data(self, df, still_unbalenced):
@@ -224,7 +237,9 @@ class BertFineTuner:
         if save_model:
             self.save_model(model_name)
         self.last_model_acc = {model_name: model_acc}
-        self.model = BertForSequenceClassification.from_pretrained(model_name, num_labels=2)
+        self.model = BertForSequenceClassification.from_pretrained(
+            model_name, num_labels=self.num_labels
+        )
         self.base_model = model_name
 
 
@@ -265,11 +280,20 @@ class MyTrainer(Trainer):
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         labels = inputs.pop("labels")
 
-        # forward pass
         outputs = model(**inputs)
         logits = outputs.get("logits")
-        loss_fct = nn.CrossEntropyLoss(weight=torch.tensor([0.2, 0.8], device=model.device))
-        loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
+        num_labels = self.model.config.num_labels
+        if num_labels == 2:
+            # Original binary-only positive-class up-weighting.
+            class_weight = torch.tensor([0.2, 0.8], device=model.device)
+        else:
+            # Multi-class: uniform weighting; keeps MyTrainer usable but does not
+            # try to second-guess the class distribution. If you want imbalance
+            # weighting in multi-class, compute it from the training data and
+            # pass it in here.
+            class_weight = torch.ones(num_labels, device=model.device) / num_labels
+        loss_fct = nn.CrossEntropyLoss(weight=class_weight)
+        loss = loss_fct(logits.view(-1, num_labels), labels.view(-1))
         return (loss, outputs) if return_outputs else loss
 
 
