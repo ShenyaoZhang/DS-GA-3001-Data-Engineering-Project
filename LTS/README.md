@@ -127,6 +127,111 @@ python main_cluster.py \
   -cluster_size 10
 ```
 
+---
+
+## 📰 Use Case 4: Reuters-21578 (archive.zip) + Qwen labeler
+
+This use case runs LTS on the Reuters-21578 collection shipped as
+`data/archive.zip` (8 CSVs covering ModApte / ModHayes / ModLewis splits, 13
+columns each: `text, text_type, topics, lewis_split, cgis_split, old_id,
+new_id, places, people, orgs, exchanges, date, title`). The default binary
+triage task is **`earn` vs `not earn`**, but every part of the pipeline now
+accepts an arbitrary positive/negative label so you can repeat the experiment
+for any topic in the corpus (`trade`, `acq`, `crude`, `money-fx`, ...).
+
+### Step 1 — Prepare the data
+
+```bash
+# auto-extracts data/archive.zip into data/archive/ on first run
+python scripts/prepare_reuters.py --split ModApte --label earn
+```
+
+Useful options:
+
+```bash
+# inspect available topics (descending frequency) before picking one
+python scripts/prepare_reuters.py --split ModApte --list-topics 20
+
+# different positive class
+python scripts/prepare_reuters.py --split ModApte --label trade
+
+# different ModX split
+python scripts/prepare_reuters.py --split ModLewis --label acq
+```
+
+Outputs (under `data_use_cases/`):
+
+- `reuters_modapte_earn_train.csv` — pool (`id, title, description, label, label_earn`)
+- `reuters_modapte_earn_validation.csv` — gold validation (`id, title, description, label`)
+- `reuters_modapte_earn_smoke_train.csv` / `_smoke_validation.csv` — small subsets for quick runs
+
+### Step 2 — Smoke-test the Qwen labeler (optional, ~30s on CPU)
+
+```bash
+# downloads Qwen2.5-0.5B-Instruct on first run
+python scripts/smoke_test_qwen_label.py
+```
+
+Set `QWEN_MODEL_DIR=Qwen/Qwen2.5-1.5B-Instruct` (or any local path) for higher
+accuracy.
+
+### Step 3 — Run LTS with Qwen as labeler
+
+```bash
+# point at a local Qwen checkpoint or HF id
+export QWEN_MODEL_DIR="Qwen/Qwen2.5-1.5B-Instruct"
+
+# fast smoke run (≈500-row pool, 200-row validation, 10 rounds)
+python main_cluster.py \
+  -sample_size 50 \
+  -filename "data_use_cases/reuters_modapte_earn_smoke_train" \
+  -val_path "data_use_cases/reuters_modapte_earn_smoke_validation.csv" \
+  -balance True \
+  -sampling "thompson" \
+  -filter_label False \
+  -model_finetune "bert-base-uncased" \
+  -labeling "qwen" \
+  -model "text" \
+  -baseline 0.5 \
+  -metric "f1" \
+  -cluster_size 5
+```
+
+For a different positive class (e.g. `trade`), pass it explicitly so the prompt
+and the {0,1} mapping match what `prepare_reuters.py` produced:
+
+```bash
+python main_cluster.py \
+  -sample_size 200 \
+  -filename "data_use_cases/reuters_modapte_trade_train" \
+  -val_path "data_use_cases/reuters_modapte_trade_validation.csv" \
+  -balance True -sampling "thompson" -filter_label False \
+  -model_finetune "bert-base-uncased" -labeling "qwen" \
+  -model "text" -baseline 0.5 -metric "f1" -cluster_size 10 \
+  -positive_label "trade" -negative_label "not trade" \
+  -task_description "the title of a Reuters news article. Label 1 ({pos}) if the article is primarily about international trade, tariffs, exports, imports, or trade policy. Label 2 ({neg}) for any other topic."
+```
+
+You can equivalently set those three knobs via env vars
+(`LTS_POSITIVE_LABEL`, `LTS_NEGATIVE_LABEL`, `LTS_TASK_DESCRIPTION`) and
+optionally point `LTS_EXAMPLES_JSON` at a JSON file of `{"title", "label"}`
+in-context examples.
+
+### Notes / tips
+
+- Before re-running on a new pool, delete `positive_data.csv` (carry-over from a
+  previous failed iteration) and the `models/` / `log/` / `results/` outputs to
+  start clean.
+- `main_cluster.py` caches LDA clusters in `<filename>_lda.csv`; delete it to
+  re-cluster after changing `--label` or split.
+- Use `-labeling file` instead of `-labeling qwen` to run an oracle baseline
+  with the gold `label` column — useful for measuring how much accuracy LTS
+  loses by relying on Qwen pseudo-labels.
+- Qwen2.5-0.5B is fine for a smoke run; for paper-quality results use
+  Qwen2.5-1.5B-Instruct or larger.
+
+---
+
 📫 Contact
 For questions or feedback, please open an issue or reach out via the contact information provided in the paper.
 

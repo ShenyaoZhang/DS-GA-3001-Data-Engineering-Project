@@ -89,6 +89,16 @@ def main():
     parser.add_argument('-cluster_size', type=int, required=False,
                         help="number of LDA topics")
 
+    # Binary labels used by the LLM labeler and the file fallback.
+    # Defaults match the Reuters earn/not-earn task; override per use case to
+    # support arbitrary triage tasks (e.g. -positive_label trade).
+    parser.add_argument('-positive_label', type=str, required=False, default=None,
+                        help="Positive class label string (default: env LTS_POSITIVE_LABEL or 'earn')")
+    parser.add_argument('-negative_label', type=str, required=False, default=None,
+                        help="Negative class label string (default: env LTS_NEGATIVE_LABEL or 'not earn')")
+    parser.add_argument('-task_description', type=str, required=False, default=None,
+                        help="Optional task description; use {pos}/{neg} placeholders for the labels")
+
 
     # Parse runtime configuration.
     args = parser.parse_args()
@@ -108,6 +118,17 @@ def main():
     metric = args.metric
     validation_path = args.val_path
     cluster_size = args.cluster_size
+
+    # Resolve binary label strings (CLI > env > default).
+    from labeling import (
+        DEFAULT_POSITIVE_LABEL,
+        DEFAULT_NEGATIVE_LABEL,
+        DEFAULT_TASK_DESCRIPTION,
+    )
+    positive_label = (args.positive_label or os.environ.get("LTS_POSITIVE_LABEL") or DEFAULT_POSITIVE_LABEL).strip()
+    negative_label = (args.negative_label or os.environ.get("LTS_NEGATIVE_LABEL") or DEFAULT_NEGATIVE_LABEL).strip()
+    task_description = args.task_description or os.environ.get("LTS_TASK_DESCRIPTION") or DEFAULT_TASK_DESCRIPTION
+    print(f"[LTS] task: positive='{positive_label}' / negative='{negative_label}'")
 
 
     # Text cleaner used before topic clustering.
@@ -169,15 +190,18 @@ def main():
         ## Generate labels
         if labeling != "file":
             # 2) Build prompts and pseudo-label sampled records with the selected label model.
-            labeler = Labeling(label_model=labeling)
+            labeler = Labeling(
+                label_model=labeling,
+                positive_label=positive_label,
+                negative_label=negative_label,
+                task_description=task_description,
+            )
             labeler.set_model()
             df = labeler.generate_inference_data(sample_data, 'clean_title')
             print("df for inference created")
             df["answer"] = df.apply(lambda x: labeler.predict_animal_product(x), axis=1)
-            # df["answer"] = df["answer"].str.strip()  # Original
-            # df["label"] = np.where(df["answer"] == 'relevant animal', 1, 0)  # Original: wildlife labels
             df["answer"] = df["answer"].str.strip().str.lower()
-            df["label"] = np.where(df["answer"] == 'earn', 1, 0)
+            df["label"] = np.where(df["answer"] == positive_label.lower(), 1, 0)
             if labeling == "qwen":
                 del labeler.model
                 del labeler.tokenizer
@@ -195,9 +219,11 @@ def main():
         else:
             # Labels already exist in the sampled file.
             df = sample_data
-            # Reuters: map topic-specific label column to generic 'label' if needed.
-            if "label" not in df.columns and "label_earn" in df.columns:
-                df["label"] = df["label_earn"]
+            # Map topic-specific label column to generic 'label' if needed.
+            if "label" not in df.columns:
+                topic_col = f"label_{positive_label.lower().replace(' ', '_')}"
+                if topic_col in df.columns:
+                    df["label"] = df[topic_col]
         print(df["label"].value_counts())
         # print(df["answer"].value_counts())
 

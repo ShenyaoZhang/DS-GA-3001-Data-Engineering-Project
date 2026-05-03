@@ -2,6 +2,8 @@ import pandas as pd
 from pprint import pprint
 import torch
 import os
+import json
+from typing import List, Tuple, Optional
 
 from transformers import (
     AutoModelForCausalLM,
@@ -11,10 +13,83 @@ from openai import OpenAI
 import pandas as pd
 
 
+# Default binary task: Reuters "earn" vs "not earn".
+# Override per-run via Labeling(...) kwargs or env vars LTS_POSITIVE_LABEL /
+# LTS_NEGATIVE_LABEL / LTS_TASK_DESCRIPTION / LTS_EXAMPLES_JSON so the same
+# pipeline can serve other binary triage tasks (e.g. "trade", "acq", or the
+# original wildlife-product task) without code edits.
+DEFAULT_POSITIVE_LABEL = "earn"
+DEFAULT_NEGATIVE_LABEL = "not earn"
+DEFAULT_TASK_DESCRIPTION = (
+    "the title (and possibly a short excerpt) of a Reuters news article. "
+    "Label 1 ({pos}) if the article is about corporate earnings, financial "
+    "results, profits, losses, dividends, revenue reports, or quarterly/annual "
+    "results. Label 2 ({neg}) for any other topic such as trade, commodities, "
+    "politics, acquisitions, monetary policy, etc."
+)
+DEFAULT_EXAMPLES: List[Tuple[str, str]] = [
+    ("NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE", "not earn"),
+    ("ALLIED-LYONS YEAR PRETAX PROFIT RISES", "earn"),
+    ("JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS", "not earn"),
+    ("SEARS ROEBUCK 1ST-QTR NET INCOME UP", "earn"),
+]
+
+
+def _load_examples_from_env() -> Optional[List[Tuple[str, str]]]:
+    path = os.environ.get("LTS_EXAMPLES_JSON")
+    if not path:
+        return None
+    try:
+        with open(path, "r") as f:
+            raw = json.load(f)
+        return [(str(item["title"]), str(item["label"])) for item in raw]
+    except Exception as exc:
+        print(f"[Labeling] failed to load LTS_EXAMPLES_JSON='{path}': {exc}")
+        return None
+
+
 class Labeling:
-    def __init__(self, label_model= "llama"):
+    def __init__(
+        self,
+        label_model: str = "llama",
+        positive_label: Optional[str] = None,
+        negative_label: Optional[str] = None,
+        task_description: Optional[str] = None,
+        examples: Optional[List[Tuple[str, str]]] = None,
+    ):
         self.label_model = label_model
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.positive_label = (
+            positive_label
+            or os.environ.get("LTS_POSITIVE_LABEL")
+            or DEFAULT_POSITIVE_LABEL
+        ).strip()
+        self.negative_label = (
+            negative_label
+            or os.environ.get("LTS_NEGATIVE_LABEL")
+            or DEFAULT_NEGATIVE_LABEL
+        ).strip()
+        raw_desc = (
+            task_description
+            or os.environ.get("LTS_TASK_DESCRIPTION")
+            or DEFAULT_TASK_DESCRIPTION
+        )
+        self.task_description = raw_desc.format(
+            pos=self.positive_label, neg=self.negative_label
+        )
+        self.examples = (
+            examples
+            or _load_examples_from_env()
+            or DEFAULT_EXAMPLES
+        )
+
+    @property
+    def pos(self) -> str:
+        return self.positive_label.lower()
+
+    @property
+    def neg(self) -> str:
+        return self.negative_label.lower()
 
     def generate_prompt(self, title):
         if self.label_model == "llama":
@@ -34,65 +109,31 @@ class Labeling:
                 {title.strip()}
                 """
 
+    def _examples_block(self) -> str:
+        lines = []
+        for idx, (ex_title, ex_label) in enumerate(self.examples, start=1):
+            lines.append(f"{idx}. Article: {ex_title}\nLabel: {ex_label}\n")
+        return "\n".join(lines)
+
     def generate_prompt_gpt(self, title):
-        # # Original wildlife product classification prompt:
-        # return f'''You are labeling tool to create labels for a classification task .
-        #                      I will provide text data from an advertisement of a product.
-        #                      The product should be classified in two labels:
-        #                      Label 1: relevant animal - if the product is from any of those 3 animals: Shark, Ray or Chimaeras. It should be from a real animal. Not an image or plastic for example.
-        #                      Label 2: not a relevant animal - if the product is from any other animal that is not Shark, Ray, or Chimaeras, or if the product is 100% synthetic (vegan).
-        #                      ...
-        #                      6. Advertisement: {title}
-        #                      Label:
-        #                      '''
-
-        # Reuters topic classification prompt (earn):
-        return f'''You are a labeling tool to create labels for a text classification task.
-I will provide the title (and possibly a short excerpt) of a Reuters news article.
-The article should be classified into one of two labels:
-Label 1: earn - if the article is about corporate earnings, financial results,
-profits, losses, dividends, revenue reports, or quarterly/annual results.
-Label 2: not earn - if the article is about any other topic such as trade,
-commodities, politics, acquisitions, monetary policy, etc.
-Return only one of the two labels: earn or not earn. No explanation is necessary.
-
-Examples:
-1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
-Label: not earn
-
-2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
-Label: earn
-
-3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
-Label: not earn
-
-4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
-Label: earn
-
-5. Article: {title}
-Label:
-'''
+        next_idx = len(self.examples) + 1
+        return (
+            "You are a labeling tool to create labels for a text classification task.\n"
+            f"I will provide {self.task_description}\n"
+            f"Return only one of the two labels: {self.positive_label} or "
+            f"{self.negative_label}. No explanation is necessary.\n\n"
+            "Examples:\n"
+            f"{self._examples_block()}\n"
+            f"{next_idx}. Article: {title}\nLabel:\n"
+        )
 
     def generate_llama_prompt(self):
-        # # Original wildlife product classification prompt for LLaMA:
-        # f'''You are labeling tool to create labels for a classification task .
-        #                      I will provide text data from an advertisement of a product.
-        #                      The product should be classified in two labels:
-        #                      relevant animal - ...
-        #                      not a relevant animal - ...
-        #                      6. Advertisement:
-        #                      '''
-
-        # Reuters topic classification prompt (earn) for LLaMA:
-        return f'''You are a labeling tool for a text classification task.
-I will provide the title of a Reuters news article.
-Classify the article into one of two labels:
-earn - if the article is about corporate earnings, financial results,
-profits, losses, dividends, revenue reports, or quarterly/annual results.
-not earn - if the article is about any other topic.
-Return only one of the two labels: earn or not earn.
-Article:
-'''
+        return (
+            "You are a labeling tool for a text classification task.\n"
+            f"I will provide {self.task_description}\n"
+            f"Return only one of the two labels: {self.positive_label} or "
+            f"{self.negative_label}.\nArticle:\n"
+        )
 
     def set_model(self):
         if self.label_model == "llama":
@@ -194,9 +235,7 @@ Article:
                 try:
                     answer = results.split("Response:\n")[1].split("\n")[0]
                 except Exception:
-                    # Handle any other exception
-                    # answer = 'not a relevant animal'  # Original: wildlife default
-                    answer = 'not earn'  # Reuters default
+                    answer = self.negative_label
         return answer
 
     def get_qwen_label(self, row):
@@ -220,19 +259,22 @@ Article:
         text_out = self.tokenizer.decode(
             outputs[0][prompt_len:], skip_special_tokens=True
         ).strip().lower()
-        if "not earn" in text_out[:32]:
-            return "not earn"
-        if text_out.startswith("earn") or text_out[:12].strip() == "earn":
-            return "earn"
-        return "not earn"
+        # Match the more specific (longer) label first so 'not earn' wins over 'earn'
+        # when the model emits 'not earn'.
+        labels = sorted([self.pos, self.neg], key=len, reverse=True)
+        for lab in labels:
+            if lab and lab in text_out[:64]:
+                return lab
+        return self.neg
 
     def get_file_label(self, row):
-        # raise NotImplementedError()  # Original: not implemented
         if "label" in row and pd.notna(row["label"]):
-            return "earn" if int(row["label"]) == 1 else "not earn"
-        if "label_earn" in row and pd.notna(row["label_earn"]):
-            return "earn" if int(row["label_earn"]) == 1 else "not earn"
-        return "not earn"
+            return self.pos if int(row["label"]) == 1 else self.neg
+        # Backward compat: prepare_reuters previously emitted label_<topic> columns.
+        topic_col = f"label_{self.pos.replace(' ', '_')}"
+        if topic_col in row and pd.notna(row[topic_col]):
+            return self.pos if int(row[topic_col]) == 1 else self.neg
+        return self.neg
 
     @staticmethod
     def check_already_label(row):
