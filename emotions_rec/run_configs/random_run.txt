@@ -1,0 +1,17 @@
+python src/main_cluster.py \
+  -sample_size 150 \
+  -filename "data/processed/train_inner_emotions_joy" \
+  -val_path "data/processed/val_emotions_joy.csv" \
+  -balance False \
+  -sampling "random" \
+  -filter_label True \
+  -model_finetune "bert-base-uncased" \
+  -labeling "qwen" \
+  -model "text" \
+  -baseline 0.5 \
+  -metric "f1_pos" \
+  -cluster_size 10 \
+  -target_class "joy" \
+  -few_shot_path "prompts/few_shot_examples_joy.json" \
+  -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
+  -max_iterations 4
