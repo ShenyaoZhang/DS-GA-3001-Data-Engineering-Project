@@ -1,6 +1,6 @@
 # 20 Newsgroups `rec.autos` Reproducibility Guide
 
-This folder contains the reproducible code, notebook, prompts, and run configuration for the 20 Newsgroups `rec.autos` experiment in the DS-GA 3001 Data Engineering final project.
+This folder contains the reproducible code, notebook, prompts, run configuration, and selected saved result artifacts for the 20 Newsgroups `rec.autos` experiment in the DS-GA 3001 Data Engineering final project.
 
 ## Experiment Goal
 
@@ -34,9 +34,12 @@ This experiment evaluates whether the Lean-to-Sample (LTS) framework can improve
 │   ├── README.md
 │   ├── raw/
 │   └── processed/
-└── run_configs/
-    ├── random_run.txt
-    └── thompson_run.txt
+├── run_configs/
+│   ├── random_run.txt
+│   └── thompson_run.txt
+└── final_results/
+    ├── random/
+    └── thompson/
 ```
 
 ## Dataset Source
@@ -154,6 +157,14 @@ See:
 See:
 
 `run_configs/thompson_run.txt`
+
+## Final Results Stored in the Repository
+
+The `final_results/` directory stores selected saved outputs from the final random and Thompson sampling runs for reference.
+
+These files are included to make it easier to inspect the final experiment artifacts used in the report, compare the two sampling strategies, and recover summary metrics without rerunning the full pipeline.
+
+The `final_results/` directory is **supplementary**. The main reproducible workflow remains the Colab notebook plus the source files in `src/`, the prompt file in `prompts/`, and the dataset preparation pipeline under `data/`.
 
 ## Important Notes
 
