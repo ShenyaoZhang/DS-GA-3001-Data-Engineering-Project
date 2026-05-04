@@ -9,7 +9,7 @@ from torch import nn
 
 
 class BertFineTuner:
-    def __init__(self, model_name: Optional[str], training_data: Optional[pd.DataFrame], test_data: Optional[pd.DataFrame], learning_rate=2e-5, dropout=0.2):
+    def __init__(self, model_name: Optional[str], training_data: Optional[pd.DataFrame], test_data: Optional[pd.DataFrame], learning_rate=2e-5, dropout=0.2, confidence_threshold=0.85, decision_threshold=0.45):
         self.base_model = model_name
         self.tokenizer = BertTokenizer.from_pretrained(model_name)
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -20,6 +20,8 @@ class BertFineTuner:
         self.run_clf = False
         self.learning_rate = learning_rate
         self.weight_decay = 0.01
+        self.confidence_threshold = confidence_threshold
+        self.decision_threshold = decision_threshold
 
         model = BertForSequenceClassification.from_pretrained(model_name, num_labels=2)
         if dropout:
@@ -119,14 +121,28 @@ class BertFineTuner:
         }
 
     def train_data(self, df, still_unbalenced):
-        early_stopping_callback = EarlyStoppingCallback(patience=5, log_dir="./log")
+        early_stopping_callback = EarlyStoppingCallback(patience=5, monitor="eval_f1", mode="max", log_dir="./log")
         tokenized_data, data_collator = self.create_dataset(df, self.test_data)
+
+        # Compute dynamic class weights from label distribution
+        class_weights = None
+        if still_unbalenced:
+            label_counts = df["label"].value_counts().sort_index()
+            total = len(df)
+            n_classes = len(label_counts)
+            class_weights = torch.tensor(
+                [total / (n_classes * label_counts.get(i, 1)) for i in range(n_classes)],
+                dtype=torch.float32
+            )
+            class_weights = class_weights / class_weights.sum() * n_classes
+            print(f"Dynamic class weights: {class_weights.tolist()}")
 
         training_args = TrainingArguments(
             output_dir="results",
             eval_strategy="epoch",
             save_strategy="epoch",
-            metric_for_best_model="eval_accuracy",
+            metric_for_best_model="eval_f1",
+            greater_is_better=True,
             per_device_train_batch_size=16,
             per_device_eval_batch_size=16,
             num_train_epochs=5,
@@ -135,12 +151,11 @@ class BertFineTuner:
             save_total_limit=2,
             logging_steps=10,
             push_to_hub=False,
-            load_best_model_at_end=False,
+            load_best_model_at_end=True,
             report_to=[]
         )
 
-        trainer_class = MyTrainer if still_unbalenced else Trainer
-        trainer = trainer_class(
+        trainer_kwargs = dict(
             model=self.model,
             args=training_args,
             data_collator=data_collator,
@@ -149,6 +164,11 @@ class BertFineTuner:
             eval_dataset=tokenized_data["val"],
             callbacks=[early_stopping_callback]
         )
+
+        if still_unbalenced:
+            trainer = MyTrainer(class_weights=class_weights, **trainer_kwargs)
+        else:
+            trainer = Trainer(**trainer_kwargs)
 
         trainer.train()
         print("Best checkpoint:", trainer.state.best_model_checkpoint)
@@ -161,6 +181,7 @@ class BertFineTuner:
         return results, self.trainer
 
     def get_inference(self, df: pd.DataFrame) -> torch.Tensor:
+        """Return predicted labels using decision_threshold for positive class."""
         predicted_labels = []
         chunk_size = 10000
         total_records = len(df)
@@ -171,12 +192,34 @@ class BertFineTuner:
             chunk = df[start_index:end_index]
             test_dataset = self.create_test_dataset(chunk)
             predictions = self.trainer.predict(test_dataset["test"])
-            prediction_scores = predictions.predictions
-            batch_predicted_labels = torch.argmax(torch.tensor(prediction_scores), dim=1)
-            predicted_labels.append(batch_predicted_labels)
+            probs = torch.softmax(torch.tensor(predictions.predictions), dim=1)
+            batch_labels = (probs[:, 1] >= self.decision_threshold).long()
+            predicted_labels.append(batch_labels)
             start_index = end_index
 
         return torch.cat(predicted_labels)
+
+    def get_inference_with_probs(self, df: pd.DataFrame):
+        """Return (predicted_labels, confidence_scores) tensors."""
+        predicted_labels = []
+        confidences = []
+        chunk_size = 10000
+        total_records = len(df)
+        start_index = 0
+
+        while start_index < total_records:
+            end_index = min(start_index + chunk_size, total_records)
+            chunk = df[start_index:end_index]
+            test_dataset = self.create_test_dataset(chunk)
+            predictions = self.trainer.predict(test_dataset["test"])
+            probs = torch.softmax(torch.tensor(predictions.predictions), dim=1)
+            batch_labels = (probs[:, 1] >= self.decision_threshold).long()
+            batch_confidence = probs.max(dim=1).values
+            predicted_labels.append(batch_labels)
+            confidences.append(batch_confidence)
+            start_index = end_index
+
+        return torch.cat(predicted_labels), torch.cat(confidences)
 
     def save_model(self, path: str):
         if self.trainer is not None:
@@ -191,33 +234,44 @@ class BertFineTuner:
 
 
 class MyTrainer(Trainer):
+    def __init__(self, class_weights=None, **kwargs):
+        super().__init__(**kwargs)
+        self.class_weights = class_weights
+
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         labels = inputs.pop("labels")
         outputs = model(**inputs)
         logits = outputs.get("logits")
-        loss_fct = nn.CrossEntropyLoss(weight=torch.tensor([0.2, 0.8], device=model.device))
+        if self.class_weights is not None:
+            weight = self.class_weights.to(model.device)
+        else:
+            weight = torch.tensor([1.0, 1.0], device=model.device)
+        loss_fct = nn.CrossEntropyLoss(weight=weight)
         loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
         return (loss, outputs) if return_outputs else loss
 
 
 class EarlyStoppingCallback(TrainerCallback):
-    def __init__(self, patience=5, log_dir=None):
+    def __init__(self, patience=5, monitor="eval_f1", mode="max", log_dir=None):
         self.patience = patience
-        self.best_loss = float("inf")
+        self.monitor = monitor
+        self.mode = mode
+        self.best_value = float("-inf") if mode == "max" else float("inf")
         self.wait = 0
         self.log_dir = log_dir
 
     def on_epoch_end(self, args, state, control, model=None, **kwargs):
         if state.is_world_process_zero and state.log_history:
-            current_loss = None
+            current_value = None
             for log_entry in reversed(state.log_history):
-                if "eval_loss" in log_entry:
-                    current_loss = log_entry["eval_loss"]
+                if self.monitor in log_entry:
+                    current_value = log_entry[self.monitor]
                     break
 
-            if current_loss is not None:
-                if current_loss < self.best_loss:
-                    self.best_loss = current_loss
+            if current_value is not None:
+                improved = (current_value > self.best_value) if self.mode == "max" else (current_value < self.best_value)
+                if improved:
+                    self.best_value = current_value
                     self.wait = 0
                 else:
                     self.wait += 1

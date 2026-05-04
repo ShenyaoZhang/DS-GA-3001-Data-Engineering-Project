@@ -43,6 +43,8 @@ def main():
     parser.add_argument("-few_shot_path", type=str, required=False, default=None)
     parser.add_argument("-hf_model_id", type=str, required=False, default="Qwen/Qwen2.5-3B-Instruct")
     parser.add_argument("-max_iterations", type=int, required=False, default=2)
+    parser.add_argument("-confidence_threshold", type=float, required=False, default=0.85, help="Min confidence to keep pseudo-labels")
+    parser.add_argument("-decision_threshold", type=float, required=False, default=0.45, help="Decision threshold for positive class")
 
     args = parser.parse_args()
 
@@ -62,6 +64,8 @@ def main():
     few_shot_path = args.few_shot_path
     hf_model_id = args.hf_model_id
     max_iterations = args.max_iterations
+    confidence_threshold = args.confidence_threshold
+    decision_threshold = args.decision_threshold
 
     preprocessor = TextPreprocessor()
 
@@ -91,7 +95,7 @@ def main():
         print("LDA created")
 
     if model == "text":
-        trainer = BertFineTuner(model_finetune, None, validation)
+        trainer = BertFineTuner(model_finetune, None, validation, confidence_threshold=confidence_threshold, decision_threshold=decision_threshold)
     else:
         raise ValueError("Currently only text model is supported")
 
@@ -148,6 +152,15 @@ def main():
             df = sample_data
             if "training_text" not in df.columns:
                 df["training_text"] = df["clean_title"] if "clean_title" in df.columns else df["title"]
+
+        # Filter pseudo-labels by model confidence (kicks in from iteration 2+)
+        if trainer.trainer is not None and len(df) > 0:
+            print("Filtering pseudo-labels by model confidence...")
+            _, model_confs = trainer.get_inference_with_probs(df)
+            confident_mask = (model_confs >= confidence_threshold).numpy()
+            n_before = len(df)
+            df = df[confident_mask].reset_index(drop=True)
+            print(f"Confidence filter: kept {len(df)}/{n_before} (threshold={confidence_threshold})")
 
         if "true_label" in df.columns and "pseudo_label" in df.columns:
             agreement = (df["true_label"].astype(float).fillna(-1).astype(int) == df["pseudo_label"].astype(int)).mean()
