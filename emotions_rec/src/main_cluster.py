@@ -158,9 +158,13 @@ def main():
             print("Filtering pseudo-labels by model confidence...")
             _, model_confs = trainer.get_inference_with_probs(df)
             confident_mask = (model_confs >= confidence_threshold).numpy()
+            n_confident = confident_mask.sum()
             n_before = len(df)
-            df = df[confident_mask].reset_index(drop=True)
-            print(f"Confidence filter: kept {len(df)}/{n_before} (threshold={confidence_threshold})")
+            if n_confident >= max(n_before * 0.3, 10):
+                df = df[confident_mask].reset_index(drop=True)
+                print(f"Confidence filter: kept {len(df)}/{n_before} (threshold={confidence_threshold})")
+            else:
+                print(f"Confidence filter skipped: only {n_confident}/{n_before} samples passed (threshold={confidence_threshold}). Keeping all.")
 
         if "true_label" in df.columns and "pseudo_label" in df.columns:
             agreement = (df["true_label"].astype(float).fillna(-1).astype(int) == df["pseudo_label"].astype(int)).mean()

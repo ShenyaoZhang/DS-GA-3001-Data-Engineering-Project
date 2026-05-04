@@ -96,10 +96,15 @@ class ThompsonSampler:
                 print(bandit_df["predicted_label"].value_counts())
                 print(f"Mean confidence: {bandit_df['confidence'].mean():.3f}")
 
-                # Only use high-confidence predictions for sampling
+                # Use high-confidence predictions if enough exist, otherwise fall back to all
                 confident = bandit_df[bandit_df["confidence"] >= trainer.confidence_threshold]
-                pos = confident[confident["predicted_label"] == 1]
-                neg = confident[confident["predicted_label"] == 0]
+                if len(confident) >= 10:
+                    pos = confident[confident["predicted_label"] == 1]
+                    neg = confident[confident["predicted_label"] == 0]
+                else:
+                    print(f"Few confident predictions ({len(confident)}), using all predictions")
+                    pos = bandit_df[bandit_df["predicted_label"] == 1]
+                    neg = bandit_df[bandit_df["predicted_label"] == 0]
 
                 if not pos.empty:
                     n_pos = sample_size // 2
@@ -108,7 +113,7 @@ class ThompsonSampler:
                     data = pd.concat([pos_data, neg_data]).sample(frac=1, random_state=42)
                     break
                 else:
-                    print("no confident positive predictions in chosen bandit, trying another")
+                    print("no positive predictions in chosen bandit, trying another")
 
             # Fallback: if filtered mode failed, sample unfiltered from the best remaining bandit
             if data.empty:
