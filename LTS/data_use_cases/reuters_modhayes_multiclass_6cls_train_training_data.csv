@@ -1,0 +1,1161 @@
+id,title,training_text,text,answer,label
+11432,CONGRESS VIDEO <CVGI> RESTRUCTURES MANAGEMENT,congress video cvgi restructures management congress video group inc said lawrence kieves has been appointed president and chief executive officer replacing morton fry who has left the company kieves was formerly chief financial officer and senior vice president the company said reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: congress video cvgi restructures management congress video group inc said lawrence kieves has been appointed president and chief executive officer replacing morton fry who has left the company kieves was formerly chief financial officer and senior vice president the company said reuter
+Label:
+",other,5
+19615,MOSELEY SECURITIES <MOSE.O> CHAIRMAN RESIGNS,moseley securities moseo chairman resigns moseley securities corp said howard berg resigned as chairman and chief executive officer it said frederick s moseley iii assumed the position of chairman in other management changes omar kassem was named vice chairman and chief executive officer and james wolitarsky executive vice president and chief financial officer was appointed president and chief operating officer the company also said it named a management committee consisting of wolitarsky and six executive vice presidents reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: moseley securities moseo chairman resigns moseley securities corp said howard berg resigned as chairman and chief executive officer it said frederick s moseley iii assumed the position of chairman in other management changes omar kassem was named vice chairman and chief executive officer and james wolitarsky executive vice president and chief financial officer was appointed president and chief operating officer the company also said it named a management committee consisting of wolitarsky and six executive vice presidents reuter
+Label:
+",other,5
+469,REGENCY CRUISES INC <SHIP> ELECTS NEW CHAIRMAN,regency cruises inc ship elects new chairman regency cruises inc said its board elected william schanz as its chairman and chief executive officer he replaces anastasios kyriakides who resigned in december schantz has served as president treasurer and a director since its inception in 1984 the company also elected three directors they are paul hermann john clive bayley and costas galetakis the company said they replace paul wells and douglas macgarvey who also resigned in december one new directors post has been added regency said reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: regency cruises inc ship elects new chairman regency cruises inc said its board elected william schanz as its chairman and chief executive officer he replaces anastasios kyriakides who resigned in december schantz has served as president treasurer and a director since its inception in 1984 the company also elected three directors they are paul hermann john clive bayley and costas galetakis the company said they replace paul wells and douglas macgarvey who also resigned in december one new directors post has been added regency said reuter
+Label:
+",trade,2
+18260,CORBUS <CRVS.O> PRESIDENT NAMED CEO,corbus crvso president named ceo corvus systems inc said lewis lipton currently president was named to the additional post of chief executive the company said lipton was also elected to its board reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: corbus crvso president named ceo corvus systems inc said lewis lipton currently president was named to the additional post of chief executive the company said lipton was also elected to its board reuter
+Label:
+",other,5
+18189,K-TRON <KTII.O> ELECTS NEW PRESIDENT,ktron ktiio elects new president ktron international inc said its board elected john c tucker president filling a position that had been vacant since july 30 1985 tucker joined ktron in 1981 as vice president chief financial officer and treasurer in 1986 he was promoted to executive vice president and chief operating officer reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: ktron ktiio elects new president ktron international inc said its board elected john c tucker president filling a position that had been vacant since july 30 1985 tucker joined ktron in 1981 as vice president chief financial officer and treasurer in 1986 he was promoted to executive vice president and chief operating officer reuter
+Label:
+",other,5
+16877,KAYDON <KDON.O> NAMES NEW CHAIRMAN,kaydon kdono names new chairman kaydon corp said president richard a shantz has been named chairman succeeding glenn w bailey who remains on the board the company said lawrence j cawley who had been president of the bearing division has ben named to succeed shantz as kaydon president reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: kaydon kdono names new chairman kaydon corp said president richard a shantz has been named chairman succeeding glenn w bailey who remains on the board the company said lawrence j cawley who had been president of the bearing division has ben named to succeed shantz as kaydon president reuter
+Label:
+",other,5
+8921,DEROSE <DRI> CHAIRMAN STEPS DOWN,derose dri chairman steps down derose industries inc said robert a derose has retired as chairman and chief executive officer but will remain on the board through 1987 in an advisory capacity it said president and chief operating officer victor a derose his son has been named chairman and ceo the company said director tom johnson who is also president of high chaparral inc has been named president and chief operating officer reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: derose dri chairman steps down derose industries inc said robert a derose has retired as chairman and chief executive officer but will remain on the board through 1987 in an advisory capacity it said president and chief operating officer victor a derose his son has been named chairman and ceo the company said director tom johnson who is also president of high chaparral inc has been named president and chief operating officer reuter
+Label:
+",other,5
+18059,PERRY DRUG STORES <PDS> NAMES NEW PRESIDENT,perry drug stores pds names new president perry drug stores inc said it has elected david schwartz as president and chief executive officer effective immediately perry said schwartz who will also serve on the board replaced donald fox who resigned january 12 previously schwartz was vice president of drug and general merchandise for kroger co kr perry said reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: perry drug stores pds names new president perry drug stores inc said it has elected david schwartz as president and chief executive officer effective immediately perry said schwartz who will also serve on the board replaced donald fox who resigned january 12 previously schwartz was vice president of drug and general merchandise for kroger co kr perry said reuter
+Label:
+",other,5
+4251,<TELCOM GENERAL CORP> PRESIDENT RESIGNS,telcom general corp president resigns telcom general corp which stopped operating a month ago said robert f friedman has resigned as president chief executive officer and a director reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: telcom general corp president resigns telcom general corp which stopped operating a month ago said robert f friedman has resigned as president chief executive officer and a director reuter
+Label:
+",earn,0
+52,ARVIN INDS <ARV> PROMOTES EVANS TO PRESIDENT,arvin inds arv promotes evans to president arvin industries inc said lk evans has been elected president succeeding james baker who remains chairman evans had been executive vice president reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: arvin inds arv promotes evans to president arvin industries inc said lk evans has been elected president succeeding james baker who remains chairman evans had been executive vice president reuter
+Label:
+",other,5
+7513,THE GAP INC <GPS> NAMES PRESIDENT,the gap inc gps names president the gap inc said it named millard drexler as its president drexler 42 had been executive vice preisdent for merchandising and president of the gap stores division previously chairman and chief executive officer donald fisher also held the position of president as well drexler retains his position as president and chief executive officer of the gap stores division reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: the gap inc gps names president the gap inc said it named millard drexler as its president drexler 42 had been executive vice preisdent for merchandising and president of the gap stores division previously chairman and chief executive officer donald fisher also held the position of president as well drexler retains his position as president and chief executive officer of the gap stores division reuter
+Label:
+",other,5
+11973,AMES <ADD> NAMES NEW CHIEF FINANCIAL OFFICER,ames add names new chief financial officer ames department stores inc said duane wolter has been named executive vice president and chiedf financial officer succeeding as chief financial officer ralph m shulansky the company said shulansky remains senior vice presidentadministration and investor relations ames said yesterday that inventory shortages found at its secaucus nj distribution center would hurt results for the year ended january 31 wolter had been senior vice president finance and chief financial officer of rapidamerican corps mccrory corp unit reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: ames add names new chief financial officer ames department stores inc said duane wolter has been named executive vice president and chiedf financial officer succeeding as chief financial officer ralph m shulansky the company said shulansky remains senior vice presidentadministration and investor relations ames said yesterday that inventory shortages found at its secaucus nj distribution center would hurt results for the year ended january 31 wolter had been senior vice president finance and chief financial officer of rapidamerican corps mccrory corp unit reuter
+Label:
+",trade,2
+19279,"IC INDUSTRIES NAMES KARL BAYS CHAIRMAN, CHIEF EXECUTIVE",ic industries names karl bays chairman chief executive,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: ic industries names karl bays chairman chief executive
+Label:
+",acq,1
+14095,FEDERAL RESOURCES <FDRC> NAMES NEW PRESIDENT,federal resources fdrc names new president federal resources corp said it has named john kotts president and chief operating officer replacing paul hannesson who remains chairman and chief executive officer reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: federal resources fdrc names new president federal resources corp said it has named john kotts president and chief operating officer replacing paul hannesson who remains chairman and chief executive officer reuter
+Label:
+",earn,0
+8917,CONTROL RESOURCES <CRIX> NAMES PRESIDENT,control resources crix names president control resources industries inc said r joseph clancy was named to the newlycreated position of president it also said cody geddes was named vice president and chief financial officer geddes replaces former chief financial officer john wojcik who retains his vice presidents post and assumes the new position of corporate counsel clancy had been vice president of the company since june 1986 control resources said reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: control resources crix names president control resources industries inc said r joseph clancy was named to the newlycreated position of president it also said cody geddes was named vice president and chief financial officer geddes replaces former chief financial officer john wojcik who retains his vice presidents post and assumes the new position of corporate counsel clancy had been vice president of the company since june 1986 control resources said reuter
+Label:
+",trade,2
+1304,APPLIED MAGNETICS <APM> NAMES OFFICERS,applied magnetics apm names officers applied magnetics corp said its board named ben newitt to the new position of vice chairman and as chief executive officer newitt who had been president and chief executive officer is succeeded as president by william anderson who had been executive vice president and chief operating officer reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: applied magnetics apm names officers applied magnetics corp said its board named ben newitt to the new position of vice chairman and as chief executive officer newitt who had been president and chief executive officer is succeeded as president by william anderson who had been executive vice president and chief operating officer reuter
+Label:
+",other,5
+21397,XIDEX <XIDX.O> NAMES NEW CHIEF EXECUTIVE,xidex xidxo names new chief executive xidex corp said lester l colbert jr will be succeeded as president and chief executive officer by executive vice president and chief operating officer bert zaccaria but will remain chairman the company said colbert has decided to take a less active role in management reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: xidex xidxo names new chief executive xidex corp said lester l colbert jr will be succeeded as president and chief executive officer by executive vice president and chief operating officer bert zaccaria but will remain chairman the company said colbert has decided to take a less active role in management reuter
+Label:
+",other,5
+12944,DATAFLEX <DFLX> NAMES PRESIDENT,dataflex dflx names president dataflex corp said it named richard rose president succeeding jeffrey lamm who continues as chairman and chief executive officer rose has been executive vice president of the desktop computer marketing company since joining it in 1984 reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: dataflex dflx names president dataflex corp said it named richard rose president succeeding jeffrey lamm who continues as chairman and chief executive officer rose has been executive vice president of the desktop computer marketing company since joining it in 1984 reuter
+Label:
+",other,5
+4421,E-SYSTEMS <ESY> CHAIRMAN TO RETIRE,esystems esy chairman to retire esystems inc said john w dixon will retire april 21 as chairman and chief executive officer but remain on the board as chairman emeritus the company said president and chief operating officer david r tacke will succeed dixon as chairman and chief executive and senior vice president e gene keigger will become president and chief operating officer reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: esystems esy chairman to retire esystems inc said john w dixon will retire april 21 as chairman and chief executive officer but remain on the board as chairman emeritus the company said president and chief operating officer david r tacke will succeed dixon as chairman and chief executive and senior vice president e gene keigger will become president and chief operating officer reuter
+Label:
+",other,5
+12218,FIRST FEDERAL CHARLESTON <FFCH> NAMES NEW CEO,first federal charleston ffch names new ceo first federal savings and loan association of charleston said executive vice president al hutchinson jr has been named to succeed robert l cale as president and chief executive officer when he retires on april 1 1988 reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: first federal charleston ffch names new ceo first federal savings and loan association of charleston said executive vice president al hutchinson jr has been named to succeed robert l cale as president and chief executive officer when he retires on april 1 1988 reuter
+Label:
+",earn,0
+20383,HONEYWELL <HON> ELECTS NEW CHIEF EXECUTIVE,honeywell hon elects new chief executive honeywell inc said its board of directors elected its president dr james renier 57 as chief executive officer to succeed edson spencer who will continue as chairman of the board reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: honeywell hon elects new chief executive honeywell inc said its board of directors elected its president dr james renier 57 as chief executive officer to succeed edson spencer who will continue as chairman of the board reuter
+Label:
+",other,5
+9548,ZENITH <ZE> NAMES NEW FINANCIAL OFFICER,zenith ze names new financial officer zenith electronics corp said howard graham has been named vice presidentfinance and chief financial officer effective april 1 reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: zenith ze names new financial officer zenith electronics corp said howard graham has been named vice presidentfinance and chief financial officer effective april 1 reuter
+Label:
+",other,5
+10252,FLIGHT DYNAMICS <FLTY> CHAIRMAN STEPS DOWN,flight dynamics flty chairman steps down flight dynamics inc said robert l carter has stepped down as chairman but will continue as a director the company said carter has been succeeded by john h geiger who had been president and chief executive officer since 1985 geigers post in turn has been filled by john p desmond previously executive vice president and chief operating officer the company said reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: flight dynamics flty chairman steps down flight dynamics inc said robert l carter has stepped down as chairman but will continue as a director the company said carter has been succeeded by john h geiger who had been president and chief executive officer since 1985 geigers post in turn has been filled by john p desmond previously executive vice president and chief operating officer the company said reuter
+Label:
+",other,5
+17705,SYNERCOM <SYNR.O> NAMES NEW PRESIDENT,synercom synro names new president synercom technology inc said it has named robert forsyth president the company said forsyth is taking over the position from thomas moore who remains chairman and chief executive officer reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: synercom synro names new president synercom technology inc said it has named robert forsyth president the company said forsyth is taking over the position from thomas moore who remains chairman and chief executive officer reuter
+Label:
+",other,5
+5685,FARAH <FRA> NAMES FINANCIAL OFFICER,farah fra names financial officer farah manufacturing co said it named christopher carameros senior vice president of finance effective april 1 carameros will succeed richard jaeger as chief financial officer jaeger who continues as chief financial officer on a transitional basis was named vice chairman responsible for corporate finance carameros has been in public accounting for 12 years most recently as partner at coopers and lybrand reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: farah fra names financial officer farah manufacturing co said it named christopher carameros senior vice president of finance effective april 1 carameros will succeed richard jaeger as chief financial officer jaeger who continues as chief financial officer on a transitional basis was named vice chairman responsible for corporate finance carameros has been in public accounting for 12 years most recently as partner at coopers and lybrand reuter
+Label:
+",other,5
+6900,ONCOGENE <ONCS> PRESIDENT RESIGNS,oncogene oncs president resigns oncogene science inc said robert ivy is resigning as president chief executive officer and director effective april 12 no immediate successor was named reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: oncogene oncs president resigns oncogene science inc said robert ivy is resigning as president chief executive officer and director effective april 12 no immediate successor was named reuter
+Label:
+",earn,0
+16882,EL POLLO ASADO <EPAI.O> NAMES PRESIDENT,el pollo asado epaio names president el pollo asado inc said executive vice president and chief operating officer richard j peterson has been named president succeeding richard b lipson who remains chairman and chief executive the company also said chief financial officer ronald a paradis has been named to the added posts of executive vice president and director on the board he replaces maria a lipson reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: el pollo asado epaio names president el pollo asado inc said executive vice president and chief operating officer richard j peterson has been named president succeeding richard b lipson who remains chairman and chief executive the company also said chief financial officer ronald a paradis has been named to the added posts of executive vice president and director on the board he replaces maria a lipson reuter
+Label:
+",other,5
+16889,NWA <NWA> NAMES NEW HEAD FOR UNIT,nwa nwa names new head for unit nwa inc said edward a neer jr has been named president and chief executive officer of its mainline travel inc subsidiary replacing warren d phillips as chief executive and robert l daniels asd president neer had been western regional sales director of nwas northwest airlines unit it said daniels has been named president of mainlines retail division reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: nwa nwa names new head for unit nwa inc said edward a neer jr has been named president and chief executive officer of its mainline travel inc subsidiary replacing warren d phillips as chief executive and robert l daniels asd president neer had been western regional sales director of nwas northwest airlines unit it said daniels has been named president of mainlines retail division reuter
+Label:
+",other,5
+2911,JACOBS REPLACED AS MINSTAR <MNST> PRESIDENT,jacobs replaced as minstar mnst president minstar inc said kenneth j severinson was named president and chief operating officer to succeed irwin l jacobs jacobs remains chairman and chief executive officer of the company severinson has most recently worked as president of minstars energy services group reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: jacobs replaced as minstar mnst president minstar inc said kenneth j severinson was named president and chief operating officer to succeed irwin l jacobs jacobs remains chairman and chief executive officer of the company severinson has most recently worked as president of minstars energy services group reuter
+Label:
+",other,5
+15277,CORVUS SYSTEMS <CRVS> NAMES NEW PRESIDENT,corvus systems crvs names new president corvus systems inc said it named lewis lipton its president and chief operating officer lipton had been consulting for corvus for the past nine months and prior to that was the chief executive officer of trimedia corp he reports to james siehl who had been acting as president and continues as chief executive officer siehl was also named chairman of the board which he had also been acting as reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: corvus systems crvs names new president corvus systems inc said it named lewis lipton its president and chief operating officer lipton had been consulting for corvus for the past nine months and prior to that was the chief executive officer of trimedia corp he reports to james siehl who had been acting as president and continues as chief executive officer siehl was also named chairman of the board which he had also been acting as reuter
+Label:
+",other,5
+4379,MELVILLE <MES> NAMES CHIEF FINANCIAL OFFICER,melville mes names chief financial officer melville corp said it elected robert huth as executive vice president and chief financial officer succeeding kenneth berland on april six berland will continue as vice chairman and chief administrative officer huth is a partner in the accounting firm of peat marwick mitchell and co reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: melville mes names chief financial officer melville corp said it elected robert huth as executive vice president and chief financial officer succeeding kenneth berland on april six berland will continue as vice chairman and chief administrative officer huth is a partner in the accounting firm of peat marwick mitchell and co reuter
+Label:
+",other,5
+18844,PACIFIC FIRST <PFFS.O> CHAIRMAN RESIGNS,pacific first pffso chairman resigns pacific first financial corp said president jerry pohlman was appointed chairman and chief executive officer replacing james anderson who resigned reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: pacific first pffso chairman resigns pacific first financial corp said president jerry pohlman was appointed chairman and chief executive officer replacing james anderson who resigned reuter
+Label:
+",earn,0
+19577,"BAKER, FENTRESS <BKRF.O> NAMES NEW CHAIRMAN",baker fentress bkrfo names new chairman baker fentress and co said it named james gorter as chairman filling the vacancy created by the death on june 23 of chairman and chief executive officer james fentress gorter a partner of goldman sachs and co has been a baker fentress director since 1978 the company said daivd peterson president since 1982 was elected chief executive officer reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: baker fentress bkrfo names new chairman baker fentress and co said it named james gorter as chairman filling the vacancy created by the death on june 23 of chairman and chief executive officer james fentress gorter a partner of goldman sachs and co has been a baker fentress director since 1978 the company said daivd peterson president since 1982 was elected chief executive officer reuter
+Label:
+",other,5
+10813,MAGMA POWER <MGMA> NAMES NEW CHIEF EXECUTIVE,magma power mgma names new chief executive magma power co said director arnold l johnson has been named president and chief executive officer he succeeds andrew w hoch who moved to chairman in february following the resignation of bc mccabe sr the company said johnson has also been named president and chief executive officer of magma energy inc mage which magma power controls succeeding hoch who becomes magma energy chairman as well mccabe whom hoch also succeeds there has been named chairman emeritus reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: magma power mgma names new chief executive magma power co said director arnold l johnson has been named president and chief executive officer he succeeds andrew w hoch who moved to chairman in february following the resignation of bc mccabe sr the company said johnson has also been named president and chief executive officer of magma energy inc mage which magma power controls succeeding hoch who becomes magma energy chairman as well mccabe whom hoch also succeeds there has been named chairman emeritus reuter
+Label:
+",trade,2
+15756,A.T. BROD NAMES NEW PRESIDENT,at brod names new president at brod and co inc an investment banking firm said michael l brod has been named president and chief operating officer succeeding his father albert t brod who remains chairman and chief executive officer reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: at brod names new president at brod and co inc an investment banking firm said michael l brod has been named president and chief operating officer succeeding his father albert t brod who remains chairman and chief executive officer reuter
+Label:
+",other,5
+1305,PHONE-A-GRAM <PHOG> NAMES NEW CHAIRMAN,phoneagram phog names new chairman phoneagram system inc said it named eugene mora its chairman and chief executive officer mora succeed fred peterson who resigned mora had been president of victor temporary services he has been a member of phoneagrams board since 1986 reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: phoneagram phog names new chairman phoneagram system inc said it named eugene mora its chairman and chief executive officer mora succeed fred peterson who resigned mora had been president of victor temporary services he has been a member of phoneagrams board since 1986 reuter
+Label:
+",other,5
+18826,HYDRO OPTICS <HOPC.O> CHAIRMAN RESIGNS,hydro optics hopco chairman resigns hydro optics inc said kenneth s roth has resigned as president and chairman no reason was given it said director melvin l gold has been named chairman and chief executive officer and vice presidentsales barry kay has been named president and chief operating officer reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: hydro optics hopco chairman resigns hydro optics inc said kenneth s roth has resigned as president and chairman no reason was given it said director melvin l gold has been named chairman and chief executive officer and vice presidentsales barry kay has been named president and chief operating officer reuter
+Label:
+",earn,0
+19361,BRAINTREE SAVINGS <BTSB.O> NAMES NEW CEO,braintree savings btsbo names new ceo braintree savings bank said winthrop sargent iv has been named president and chief executive officer succeeding lindsay l tait who remains chairman it said sargent who was senior vice president has also been named to the board it said tait intends to retire in about four years reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: braintree savings btsbo names new ceo braintree savings bank said winthrop sargent iv has been named president and chief executive officer succeeding lindsay l tait who remains chairman it said sargent who was senior vice president has also been named to the board it said tait intends to retire in about four years reuter
+Label:
+",other,5
+15007,DIGITAL COMMUNICATIONS<DCAI> NAMES NEW PRESIDENT,digital communicationsdcai names new president digital communications associates inc said its board has named james ottinger president and chief operating officer the company said ottinger replaces bertil nordin as president nordin will become chairman and chief executive officer digital communications added reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: digital communicationsdcai names new president digital communications associates inc said its board has named james ottinger president and chief operating officer the company said ottinger replaces bertil nordin as president nordin will become chairman and chief executive officer digital communications added reuter
+Label:
+",other,5
+7131,TELWATCH NAMES FORMER ATT <T> EXEC AS PRESIDENT,telwatch names former att t exec as president telwatch inc said it named james edwards former senior vice president of american telephone and telegraph its president and chief executive officer reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: telwatch names former att t exec as president telwatch inc said it named james edwards former senior vice president of american telephone and telegraph its president and chief executive officer reuter
+Label:
+",other,5
+19282,IC INDUSTRIES <ICX> NAMES KARL BAYS AS CHAIRMAN,ic industries icx names karl bays as chairman ic industries inc said karl bays has been elected chairman and chief executive officer effective july one william johnson who is recovering from a recent stroke has been named chairman emeritus and will continue as a member of the board bays is currently chairman of baxter travenol laboratories inc bax reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: ic industries icx names karl bays as chairman ic industries inc said karl bays has been elected chairman and chief executive officer effective july one william johnson who is recovering from a recent stroke has been named chairman emeritus and will continue as a member of the board bays is currently chairman of baxter travenol laboratories inc bax reuter
+Label:
+",trade,2
+14399,MAY<MA> NAMES CHAIRMAN FOR L.S. AYRES DIVISION,mayma names chairman for ls ayres division may department stores co said it named ronald tanler as chairman of the companys ls ayres department store division based in indianapolis filling a longtime vacancy it said robert friedman continues as president and chief executive officer of ls ayres tanler had served the company as senior vice president and chief financial officer of its st louisbased famousbarr department store division reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: mayma names chairman for ls ayres division may department stores co said it named ronald tanler as chairman of the companys ls ayres department store division based in indianapolis filling a longtime vacancy it said robert friedman continues as president and chief executive officer of ls ayres tanler had served the company as senior vice president and chief financial officer of its st louisbased famousbarr department store division reuter
+Label:
+",other,5
+2292,FIRSTIER <FRST> NAMES NEW CHIEF EXECUTIVE,firstier frst names new chief executive firstier inc said president william c smith has been named chief executive officer succeeding charles w durham who remains chairman the company said durham had been chief executive on an interim basis only reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: firstier frst names new chief executive firstier inc said president william c smith has been named chief executive officer succeeding charles w durham who remains chairman the company said durham had been chief executive on an interim basis only reuter
+Label:
+",other,5
+20572,E.F. HUTTON <EFH> SAID FIRM SOUND,ef hutton efh said firm sound ef hutton group inc president and chief executive officer robert rittereiser said in a statement the firm is having no operating or financial difficulty despite the volatility of financial markets reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: ef hutton efh said firm sound ef hutton group inc president and chief executive officer robert rittereiser said in a statement the firm is having no operating or financial difficulty despite the volatility of financial markets reuter
+Label:
+",earn,0
+10726,TORAY INDUSTRIES NAMES NEW PRESIDENT,toray industries names new president toray industries inc tortt japans top synthetic fibre maker named managing director katsunosuke maeda as president effective april 16 current president yoshikazu ito will become chairman reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: toray industries names new president toray industries inc tortt japans top synthetic fibre maker named managing director katsunosuke maeda as president effective april 16 current president yoshikazu ito will become chairman reuter
+Label:
+",earn,0
+7691,COMSTOCK GROUP <CTTK> FINANCIAL OFFICER QUITS,comstock group cttk financial officer quits comstock group inc said john halecky jr resigned his posts of chief financial officer executive vice president and director frank macinnis vice president and director was named as the new chief financial officer the company said reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: comstock group cttk financial officer quits comstock group inc said john halecky jr resigned his posts of chief financial officer executive vice president and director frank macinnis vice president and director was named as the new chief financial officer the company said reuter
+Label:
+",other,5
+173,OLIN <OLN> NAMES SUCCESSOR FOR CHIEF EXECUTIVE,olin oln names successor for chief executive olin corp said john w johnstone jr 54 president and chief operating officer will succeed john m henske as chief executive officer on april 30 henske 63 will continue as chairman until he retires in june 1988 olin said reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: olin oln names successor for chief executive olin corp said john w johnstone jr 54 president and chief operating officer will succeed john m henske as chief executive officer on april 30 henske 63 will continue as chairman until he retires in june 1988 olin said reuter
+Label:
+",other,5
+10198,ACME-CLEVELAND <AMT> CEO TO STEP DOWN,acmecleveland amt ceo to step down b charles ames chairman of acmecleveland corp said he will step down as chief executive officer of the company he will be replaced by david swift who was elected to serve as president and chief executive officer effective april 1 the company said reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: acmecleveland amt ceo to step down b charles ames chairman of acmecleveland corp said he will step down as chief executive officer of the company he will be replaced by david swift who was elected to serve as president and chief executive officer effective april 1 the company said reuter
+Label:
+",other,5
+19743,TELEQUEST <TELQ.O> CHAIRMAN RESIGNS,telequest telqo chairman resigns telequest inc said henry marcheschi its chairman and president resigned for health reasons executive vice president robert lee was elected president and chief executive to succeed marcheschi the company said reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: telequest telqo chairman resigns telequest inc said henry marcheschi its chairman and president resigned for health reasons executive vice president robert lee was elected president and chief executive to succeed marcheschi the company said reuter
+Label:
+",other,5
+5526,LEVON RESOURCES <LVNVF> GOLD ASSAYS IMPROVED,levon resources lvnvf gold assays improved levon resources ltd said rechecked gold assays from the howard tunnel on its congress british columbia property yielded higher gold grades than those reported in january and february it said assays from zone one averaged 0809 ounces of gold a ton over a 40 foot section with an average width of 626 feet levon previously reported the zone averaged 0226 ounces of gold a ton over a 40 foot section with average width of 516 feet levon said rechecked assays from zone two averaged 0693 ounces of gold a ton over a 123 foot section with average width of 466 feet levon resources said the revised zone two assays compared to previously reported averages of 0545 ounces of gold a ton over a 103 foot section with average width of 4302 feet the company also said it intersected another vein 90 feet west of zone two which assayed 0531 ounces of gold a ton across a width of 387 feet reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: levon resources lvnvf gold assays improved levon resources ltd said rechecked gold assays from the howard tunnel on its congress british columbia property yielded higher gold grades than those reported in january and february it said assays from zone one averaged 0809 ounces of gold a ton over a 40 foot section with an average width of 626 feet levon previously reported the zone averaged 0226 ounces of gold a ton over a 40 foot section with average width of 516 feet levon said rechecked assays from zone two averaged 0693 ounces of gold a ton over a 123 foot section with average width of 466 feet levon resources said the revised zone two assays compared to previously reported averages of 0545 ounces of gold a ton over a 103 foot section with average width of 4302 feet the company also said it intersected another vein 90 feet west of zone two which assayed 0531 ounces of gold a ton across a width of 387 feet reuter
+Label:
+",trade,2
+9968,BALLY <BLY> NAMES NEW CHIEF FINANCIAL OFFICER,bally bly names new chief financial officer bally manufacturing corp said it has elected paul johnson a vice president and named him chief financial officer replacing donald romans who took early retirement bally also said it has appointed jerry blumenshine formerly a vice president treasurer to fill the position left vacant by johnson reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: bally bly names new chief financial officer bally manufacturing corp said it has elected paul johnson a vice president and named him chief financial officer replacing donald romans who took early retirement bally also said it has appointed jerry blumenshine formerly a vice president treasurer to fill the position left vacant by johnson reuter
+Label:
+",other,5
+488,"AMAX <AMX> IN GOLD, SILVER FIND",amax amx in gold silver find amax incx said it has identified additional gold and silver ore reserves at its amax sleeper mine near winnemucca nev it said as a result of recent drilling reserves at thhe mine are now estimated at 2470000 short tons of ore grading 024 ounce of gold and 050 ounce of silver per ton that is treatable by conventional milling techniques amax said additional reserves amenable to heap leaching are estimated at 383 mln tons averaging 0025 ounce gold and 024 ounce silver per ton further drilling is being conducted it said reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: amax amx in gold silver find amax incx said it has identified additional gold and silver ore reserves at its amax sleeper mine near winnemucca nev it said as a result of recent drilling reserves at thhe mine are now estimated at 2470000 short tons of ore grading 024 ounce of gold and 050 ounce of silver per ton that is treatable by conventional milling techniques amax said additional reserves amenable to heap leaching are estimated at 383 mln tons averaging 0025 ounce gold and 024 ounce silver per ton further drilling is being conducted it said reuter
+Label:
+",trade,2
+7166,MURGOLD RESOURCES <MGDVF> DETAILS ASSAYS,murgold resources mgdvf details assays murgold resources inc said assays received from 320 feet of drifting on the numberthree vein at the chester township property south of timmins ontario indicate an average of 0528 ounce of gold per ton across an average width of five feet for the 320foot length the last working face assayed 0422 ounce of gold per ton across 85 feet and the drift will be continued eastward from that point the company said reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: murgold resources mgdvf details assays murgold resources inc said assays received from 320 feet of drifting on the numberthree vein at the chester township property south of timmins ontario indicate an average of 0528 ounce of gold per ton across an average width of five feet for the 320foot length the last working face assayed 0422 ounce of gold per ton across 85 feet and the drift will be continued eastward from that point the company said reuter
+Label:
+",trade,2
+16532,PAULEY PETROLEUM <PP> NAMES NEWGARD PRESIDENT,pauley petroleum pp names newgard president pauley petroleum inc said it appointed mark newgard president and chief operating officer newgard 42 had been president of privatelyheld edgington oil co he succeeds william pagen pauleys chairman who had also been serving as president the company said reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: pauley petroleum pp names newgard president pauley petroleum inc said it appointed mark newgard president and chief operating officer newgard 42 had been president of privatelyheld edgington oil co he succeeds william pagen pauleys chairman who had also been serving as president the company said reuter
+Label:
+",trade,2
+2361,MANOR CARE <MNR> NAMES NEW CHAIRMAN,manor care mnr names new chairman manor care inc said vice chairman stewart bainum jr 40 has been named chairman and chief executive officer succeeding his father stewart bainum sr 67 who becomes vice chairman and chairman of the finance committee reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: manor care mnr names new chairman manor care inc said vice chairman stewart bainum jr 40 has been named chairman and chief executive officer succeeding his father stewart bainum sr 67 who becomes vice chairman and chairman of the finance committee reuter
+Label:
+",other,5
+8832,CONTROL RESOURCE <CRIX> NAMES NEW PRESIDENT,control resource crix names new president control resource industries inc said it named r joseph clancy as president r steven lutterbach who previously held the presidents title continues as chairman and chief executive officer clancy was a vice president and member of the board of directors the company also named cody geddes as vice president and chief financial officer succeeding john wojcik who remains as executive vice president reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: control resource crix names new president control resource industries inc said it named r joseph clancy as president r steven lutterbach who previously held the presidents title continues as chairman and chief executive officer clancy was a vice president and member of the board of directors the company also named cody geddes as vice president and chief financial officer succeeding john wojcik who remains as executive vice president reuter
+Label:
+",trade,2
+1748,LACANA <LCNAF> NAMES NEW CEO AND PRESIDENT,lacana lcnaf names new ceo and president lacana mining corp said gil l leathley was appointed president and chief executive replacing william gross who retired the company said gross will continue as a director and executive committee member reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: lacana lcnaf names new ceo and president lacana mining corp said gil l leathley was appointed president and chief executive replacing william gross who retired the company said gross will continue as a director and executive committee member reuter
+Label:
+",other,5
+19298,WEATHERFORD INTERNATIONAL <WII> EXECUTIVE LEAVES,weatherford international wii executive leaves weatherford international inc said executive vice president and chief operating officer kurt k bushati will leave september one to accept a senior operating position with the austrian national oil company the company said president and chief executive officer eugene l butler will assume the added duties of chief operating officer reuter,"You are a labeling tool to create labels for a text classification task.
+I will provide the title and excerpt of a Reuters news article. Pick the single best matching topic from the list of labels.
+Return only one of these labels: earn, acq, trade, crude, money-fx, other. No explanation is necessary.
+
+Examples:
+1. Article: NATIONAL AVERAGE PRICES FOR FARMER-OWNED RESERVE
+Label: not earn
+
+2. Article: ALLIED-LYONS YEAR PRETAX PROFIT RISES
+Label: earn
+
+3. Article: JAPAN TO REVISE LONG-TERM ENERGY DEMAND DOWNWARDS
+Label: not earn
+
+4. Article: SEARS ROEBUCK 1ST-QTR NET INCOME UP
+Label: earn
+
+5. Article: weatherford international wii executive leaves weatherford international inc said executive vice president and chief operating officer kurt k bushati will leave september one to accept a senior operating position with the austrian national oil company the company said president and chief executive officer eugene l butler will assume the added duties of chief operating officer reuter
+Label:
+",trade,2
