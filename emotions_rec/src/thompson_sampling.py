@@ -96,24 +96,26 @@ class ThompsonSampler:
                 print(bandit_df["predicted_label"].value_counts())
                 print(f"Mean confidence: {bandit_df['confidence'].mean():.3f}")
 
-                # Use high-confidence predictions if enough exist, otherwise fall back to all
+                # Use high-confidence predictions if enough exist, otherwise all
                 confident = bandit_df[bandit_df["confidence"] >= trainer.confidence_threshold]
-                if len(confident) >= 10:
-                    pos = confident[confident["predicted_label"] == 1]
-                    neg = confident[confident["predicted_label"] == 0]
-                else:
+                source = confident if len(confident) >= 10 else bandit_df
+                if len(confident) < 10:
                     print(f"Few confident predictions ({len(confident)}), using all predictions")
-                    pos = bandit_df[bandit_df["predicted_label"] == 1]
-                    neg = bandit_df[bandit_df["predicted_label"] == 0]
 
-                if not pos.empty:
-                    n_pos = sample_size // 2
-                    pos_data = sample_from_df(pos, n_pos)
-                    neg_data = sample_from_df(neg, sample_size - len(pos_data))
-                    data = pd.concat([pos_data, neg_data]).sample(frac=1, random_state=42)
+                if not source.empty:
+                    # Sample diverse across predicted classes
+                    sampled_parts = []
+                    pred_counts = source["predicted_label"].value_counts()
+                    per_class = max(sample_size // len(pred_counts), 1)
+                    for cls in pred_counts.index:
+                        cls_df = source[source["predicted_label"] == cls]
+                        sampled_parts.append(sample_from_df(cls_df, per_class))
+                    data = pd.concat(sampled_parts).sample(frac=1, random_state=42)
+                    if len(data) > sample_size:
+                        data = data.head(sample_size)
                     break
                 else:
-                    print("no positive predictions in chosen bandit, trying another")
+                    print("no predictions in chosen bandit, trying another")
 
             # Fallback: if filtered mode failed, sample unfiltered from the best remaining bandit
             if data.empty:

@@ -6,6 +6,13 @@ import re
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+EMOTION_MAP = {
+    "sadness": 0, "joy": 1, "love": 2,
+    "anger": 3, "fear": 4, "surprise": 5
+}
+EMOTION_NAMES = {v: k for k, v in EMOTION_MAP.items()}
+NUM_LABELS = len(EMOTION_MAP)
+
 
 class Labeling:
     def __init__(
@@ -61,24 +68,19 @@ class Labeling:
         examples = self._build_examples_text()
         short_title = self._clean_for_prompt(title, max_chars=200)
 
-        prompt = f'''Task: classify a text as expressing joy or not.
+        prompt = '''Classify the dominant emotion in this text.
 
-Label 1:
-texts expressing happiness, delight, excitement, elation, contentment, gratitude, pleasure, cheerfulness, bliss, or any primarily joyful positive emotion.
+0 = sadness (grief, loneliness, heartbreak, feeling down, despair)
+1 = joy (happiness, delight, excitement, gratitude, contentment, cheerfulness)
+2 = love (affection, caring, tenderness, romance, feeling loved)
+3 = anger (frustration, fury, irritation, resentment, outrage)
+4 = fear (anxiety, terror, nervousness, dread, worry)
+5 = surprise (shock, astonishment, disbelief, something unexpected)
 
-Label 0:
-texts expressing sadness, anger, fear, surprise, disgust, love (non-joyful), or neutral/ambiguous emotions that are NOT primarily joyful.
-
-Important:
-- subtle happiness still counts as 1 if the dominant emotion is clearly joyful
-- texts about love or anticipation = 0 unless explicitly expressing joy
-- texts expressing relief or pride count as 1 if the overall tone is joyful
-- if unsure, output 0
-
-Return only 1 or 0.
+Output only the number (0-5).
 '''
         if examples:
-            prompt += "\nExamples:\n" + examples + "\n\n"
+            prompt += "Examples:\n" + examples + "\n\n"
 
         prompt += f"Document: {short_title}\nLabel:"
         return prompt
@@ -133,17 +135,16 @@ Return only 1 or 0.
         return data
 
     def _extract_label(self, response_text: str) -> str:
-        response_text = str(response_text).strip()
+        """Extract emotion label (0-5) from model response."""
+        response_text = str(response_text).strip().lower()
 
-        match = re.search(r'\b([01])\b', response_text)
+        match = re.search(r'\b([0-5])\b', response_text)
         if match:
             return match.group(1)
 
-        lowered = response_text.lower()
-        if lowered.startswith("1") or "label: 1" in lowered or "label 1" in lowered:
-            return "1"
-        if lowered.startswith("0") or "label: 0" in lowered or "label 0" in lowered:
-            return "0"
+        for name, idx in EMOTION_MAP.items():
+            if name in response_text:
+                return str(idx)
 
         return "0"
 
@@ -153,7 +154,7 @@ Return only 1 or 0.
         messages = [
             {
                 "role": "system",
-                "content": "You are a classifier. Reply with exactly one character: 1 or 0."
+                "content": "You are an emotion classifier. Classify the dominant emotion as: 0=sadness, 1=joy, 2=love, 3=anger, 4=fear, 5=surprise. Output exactly one number."
             },
             {
                 "role": "user",

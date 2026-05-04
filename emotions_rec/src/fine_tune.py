@@ -9,7 +9,7 @@ from torch import nn
 
 
 class BertFineTuner:
-    def __init__(self, model_name: Optional[str], training_data: Optional[pd.DataFrame], test_data: Optional[pd.DataFrame], learning_rate=2e-5, dropout=0.2, confidence_threshold=0.85, decision_threshold=0.45):
+    def __init__(self, model_name: Optional[str], training_data: Optional[pd.DataFrame], test_data: Optional[pd.DataFrame], learning_rate=2e-5, dropout=0.2, confidence_threshold=0.85, num_labels=6):
         self.base_model = model_name
         self.tokenizer = BertTokenizer.from_pretrained(model_name)
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -21,9 +21,9 @@ class BertFineTuner:
         self.learning_rate = learning_rate
         self.weight_decay = 0.01
         self.confidence_threshold = confidence_threshold
-        self.decision_threshold = decision_threshold
+        self.num_labels = num_labels
 
-        model = BertForSequenceClassification.from_pretrained(model_name, num_labels=2)
+        model = BertForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
         if dropout:
             model.config.hidden_dropout_prob = dropout
             model.config.attention_probs_dropout_prob = dropout
@@ -103,21 +103,14 @@ class BertFineTuner:
         return {
             "accuracy": accuracy_score(labels, preds),
 
-            "precision": precision_score(labels, preds, average="weighted", zero_division=0),
-            "recall": recall_score(labels, preds, average="weighted", zero_division=0),
-            "f1": f1_score(labels, preds, average="weighted", zero_division=0),
-
             "precision_weighted": precision_score(labels, preds, average="weighted", zero_division=0),
             "recall_weighted": recall_score(labels, preds, average="weighted", zero_division=0),
+            "f1": f1_score(labels, preds, average="weighted", zero_division=0),
             "f1_weighted": f1_score(labels, preds, average="weighted", zero_division=0),
 
             "precision_macro": precision_score(labels, preds, average="macro", zero_division=0),
             "recall_macro": recall_score(labels, preds, average="macro", zero_division=0),
             "f1_macro": f1_score(labels, preds, average="macro", zero_division=0),
-
-            "precision_pos": precision_score(labels, preds, average="binary", pos_label=1, zero_division=0),
-            "recall_pos": recall_score(labels, preds, average="binary", pos_label=1, zero_division=0),
-            "f1_pos": f1_score(labels, preds, average="binary", pos_label=1, zero_division=0),
         }
 
     def train_data(self, df, still_unbalenced):
@@ -129,12 +122,11 @@ class BertFineTuner:
         if still_unbalenced:
             label_counts = df["label"].value_counts().sort_index()
             total = len(df)
-            n_classes = len(label_counts)
             class_weights = torch.tensor(
-                [total / (n_classes * label_counts.get(i, 1)) for i in range(n_classes)],
+                [total / (self.num_labels * label_counts.get(i, 1)) for i in range(self.num_labels)],
                 dtype=torch.float32
             )
-            class_weights = class_weights / class_weights.sum() * n_classes
+            class_weights = class_weights / class_weights.sum() * self.num_labels
             print(f"Dynamic class weights: {class_weights.tolist()}")
 
         training_args = TrainingArguments(
@@ -181,7 +173,7 @@ class BertFineTuner:
         return results, self.trainer
 
     def get_inference(self, df: pd.DataFrame) -> torch.Tensor:
-        """Return predicted labels using decision_threshold for positive class."""
+        """Return predicted class labels (0-5) via argmax."""
         predicted_labels = []
         chunk_size = 10000
         total_records = len(df)
@@ -192,8 +184,7 @@ class BertFineTuner:
             chunk = df[start_index:end_index]
             test_dataset = self.create_test_dataset(chunk)
             predictions = self.trainer.predict(test_dataset["test"])
-            probs = torch.softmax(torch.tensor(predictions.predictions), dim=1)
-            batch_labels = (probs[:, 1] >= self.decision_threshold).long()
+            batch_labels = torch.argmax(torch.tensor(predictions.predictions), dim=1)
             predicted_labels.append(batch_labels)
             start_index = end_index
 
@@ -213,7 +204,7 @@ class BertFineTuner:
             test_dataset = self.create_test_dataset(chunk)
             predictions = self.trainer.predict(test_dataset["test"])
             probs = torch.softmax(torch.tensor(predictions.predictions), dim=1)
-            batch_labels = (probs[:, 1] >= self.decision_threshold).long()
+            batch_labels = torch.argmax(probs, dim=1)
             batch_confidence = probs.max(dim=1).values
             predicted_labels.append(batch_labels)
             confidences.append(batch_confidence)
@@ -245,7 +236,7 @@ class MyTrainer(Trainer):
         if self.class_weights is not None:
             weight = self.class_weights.to(model.device)
         else:
-            weight = torch.tensor([1.0, 1.0], device=model.device)
+            weight = None
         loss_fct = nn.CrossEntropyLoss(weight=weight)
         loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
         return (loss, outputs) if return_outputs else loss

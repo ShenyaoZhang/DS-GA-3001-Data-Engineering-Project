@@ -44,7 +44,7 @@ def main():
     parser.add_argument("-hf_model_id", type=str, required=False, default="Qwen/Qwen2.5-3B-Instruct")
     parser.add_argument("-max_iterations", type=int, required=False, default=2)
     parser.add_argument("-confidence_threshold", type=float, required=False, default=0.85, help="Min confidence to keep pseudo-labels")
-    parser.add_argument("-decision_threshold", type=float, required=False, default=0.45, help="Decision threshold for positive class")
+    parser.add_argument("-num_labels", type=int, required=False, default=6, help="Number of emotion classes")
 
     args = parser.parse_args()
 
@@ -65,7 +65,7 @@ def main():
     hf_model_id = args.hf_model_id
     max_iterations = args.max_iterations
     confidence_threshold = args.confidence_threshold
-    decision_threshold = args.decision_threshold
+    num_labels = args.num_labels
 
     preprocessor = TextPreprocessor()
 
@@ -95,7 +95,7 @@ def main():
         print("LDA created")
 
     if model == "text":
-        trainer = BertFineTuner(model_finetune, None, validation, confidence_threshold=confidence_threshold, decision_threshold=decision_threshold)
+        trainer = BertFineTuner(model_finetune, None, validation, confidence_threshold=confidence_threshold, num_labels=num_labels)
     else:
         raise ValueError("Currently only text model is supported")
 
@@ -122,7 +122,7 @@ def main():
             print("df for inference created")
             df["answer"] = df.apply(lambda x: labeler.predict_animal_product(x), axis=1)
             df["answer"] = df["answer"].astype(str).str.strip()
-            df["pseudo_label"] = np.where(df["answer"] == "1", 1, 0)
+            df["pseudo_label"] = df["answer"].astype(int).clip(0, num_labels - 1)
             df["label"] = df["pseudo_label"]
             df["training_text"] = df["title"]
 
@@ -172,23 +172,10 @@ def main():
 
         print(df["label"].value_counts())
 
-        if os.path.exists("positive_data.csv"):
-            pos = pd.read_csv("positive_data.csv")
-            df = pd.concat([df, pos], ignore_index=True).sample(frac=1, random_state=42)
-            print(f"adding positive data: {df['label'].value_counts()}")
-
-        if balance:
-            if len(df[df["label"] == 1]) > 0:
-                unbalanced = len(df[df["label"] == 0]) / len(df[df["label"] == 1]) > 2
-                if unbalanced:
-                    label_counts = df["label"].value_counts()
-                    min_count = min(label_counts)
-                    balanced_df = pd.concat([
-                        df[df["label"] == 0].sample(min_count * 2, random_state=42),
-                        df[df["label"] == 1].sample(min_count, random_state=42)
-                    ])
-                    df = balanced_df.sample(frac=1, random_state=42).reset_index(drop=True)
-                    print(f"Balanced data: {df.label.value_counts()}")
+        if os.path.exists("minority_data.csv"):
+            minority = pd.read_csv("minority_data.csv")
+            df = pd.concat([df, minority], ignore_index=True).sample(frac=1, random_state=42)
+            print(f"Adding minority data: {df['label'].value_counts()}")
 
         model_name = trainer.get_base_model()
         model_results = trainer.get_last_model_acc()
@@ -199,11 +186,9 @@ def main():
             print(f"Starting with metric {metric} baseline {baseline}")
         print("Starting training")
 
-        try:
-            still_unbalenced = len(df[df["label"] == 0]) / len(df[df["label"] == 1]) >= 2
-        except Exception:
-            still_unbalenced = True
-        print(f"Unbalanced? {still_unbalenced}")
+        label_counts = df["label"].value_counts()
+        still_unbalenced = label_counts.max() / max(label_counts.min(), 1) >= 2
+        print(f"Unbalanced? {still_unbalenced} | Distribution: {label_counts.to_dict()}")
 
         results, huggingface_trainer = trainer.train_data(df, still_unbalenced)
         reward_difference = results[f"eval_{metric}"] - baseline
@@ -216,17 +201,20 @@ def main():
                 train_data = pd.read_csv(f"{filename}_training_data.csv")
                 df = pd.concat([train_data, df], ignore_index=True)
             df.to_csv(f"{filename}_training_data.csv", index=False)
-            if os.path.exists("positive_data.csv"):
-                os.remove("positive_data.csv")
+            if os.path.exists("minority_data.csv"):
+                os.remove("minority_data.csv")
             if filter_label:
                 trainer.set_clf(True)
         else:
             trainer.update_model(model_name, baseline, save_model=False)
-            if os.path.exists("positive_data.csv"):
-                positive = pd.read_csv("positive_data.csv")
-                df = df[df["label"] == 1]
-                df = pd.concat([df, positive], ignore_index=True).drop_duplicates()
-            df[df["label"] == 1].to_csv("positive_data.csv", index=False)
+            # Save minority class samples for next iteration
+            label_counts = df["label"].value_counts()
+            minority_classes = label_counts[label_counts < label_counts.median()].index.tolist()
+            minority_df = df[df["label"].isin(minority_classes)]
+            if os.path.exists("minority_data.csv"):
+                existing = pd.read_csv("minority_data.csv")
+                minority_df = pd.concat([minority_df, existing], ignore_index=True).drop_duplicates()
+            minority_df.to_csv("minority_data.csv", index=False)
 
         if os.path.exists(f"{filename}_model_results.json"):
             with open(f"{filename}_model_results.json", "r") as file:
