@@ -19,7 +19,7 @@ Sentiment labels:
 Train:
 
 ```bash
-python src/main_cluster_sentiment.py \
+python -u src/main_cluster_sentiment.py \
   -sampling thompson \
   -sample_size 300 \
   -filter_label True \
@@ -33,12 +33,9 @@ python src/main_cluster_sentiment.py \
   -few_shot_path "prompts/few_shot_examples_sentiment.json" \
   -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
   -max_iterations 8 \
-  -confidence_threshold 0.35 \
-  -outputs_dir "outputs" \
-  -console_logs False
+  -confidence_threshold 0.35
 ```
-
-Logs are saved to `outputs/sentiment_train_*.log`.
+Logs are printed directly to console/notebook output.
 
 Evaluate:
 

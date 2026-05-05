@@ -6,12 +6,10 @@ Design mirrors the short-loop style used by LTS/main_cluster.py:
 """
 
 import argparse
-import contextlib
 import gc
 import json
 import os
 import re
-from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -108,19 +106,12 @@ def parse_args():
     parser.add_argument("-max_iterations", type=int, default=8)
     parser.add_argument("-confidence_threshold", type=float, default=0.35)
     parser.add_argument("-baseline", type=float, default=(1.0 / 3.0))
-    parser.add_argument("-outputs_dir", type=str, default="outputs")
-    parser.add_argument("-console_logs", type=str2bool, default=False)
     return parser.parse_args()
 
 
-def ensure_dirs(outputs_dir):
-    for path in ["models", "data", "log", "results", outputs_dir]:
+def ensure_dirs():
+    for path in ["models", "data", "log", "results"]:
         os.makedirs(path, exist_ok=True)
-
-
-def build_log_path(outputs_dir):
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return os.path.join(outputs_dir, f"sentiment_train_{stamp}.log")
 
 
 def load_or_build_lda(filename, cluster_size, preprocessor):
@@ -231,7 +222,7 @@ def save_round_results(path, chosen_bandit, results):
 
 
 def run_pipeline(args):
-    ensure_dirs(args.outputs_dir)
+    ensure_dirs()
 
     preprocessor = TextPreprocessor()
     validation = prepare_validation(args.val_path, preprocessor)
@@ -306,20 +297,7 @@ def run_pipeline(args):
 
 def main():
     args = parse_args()
-    log_path = build_log_path(args.outputs_dir)
-    ensure_dirs(args.outputs_dir)
-
-    if args.console_logs:
-        print(f"Logging to: {log_path}")
-        run_pipeline(args)
-        return
-
-    with open(log_path, "w", encoding="utf-8") as log_file:
-        with contextlib.redirect_stdout(log_file), contextlib.redirect_stderr(log_file):
-            print(f"Run started at: {datetime.now().isoformat()}")
-            print(f"Logging to: {log_path}")
-            run_pipeline(args)
-            print(f"Run ended at: {datetime.now().isoformat()}")
+    run_pipeline(args)
 
 
 if __name__ == "__main__":

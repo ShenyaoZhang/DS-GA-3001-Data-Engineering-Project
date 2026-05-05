@@ -25,10 +25,7 @@ It includes Drive setup, branch checkout, dataset build, training, and evaluatio
 Run:
 
 ```bash
-# Recommended in Colab: redirect all stdout/stderr to a log file.
-log_path="outputs/sentiment_train_$(date +%s).log"
-
-python src/main_cluster_sentiment.py \
+python -u src/main_cluster_sentiment.py \
   -sampling thompson \
   -sample_size 300 \
   -filter_label True \
@@ -42,14 +39,9 @@ python src/main_cluster_sentiment.py \
   -few_shot_path "prompts/few_shot_examples_sentiment.json" \
   -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
   -max_iterations 8 \
-  -confidence_threshold 0.35 \
-  -outputs_dir "outputs" \
-  -console_logs False > "$log_path" 2>&1
+  -confidence_threshold 0.35
 ```
-
-Logs are saved to:
-
-`outputs/sentiment_train_*.log`
+Logs are printed directly in the notebook output.
 
 ## 4) Evaluate
 
