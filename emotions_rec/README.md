@@ -1,4 +1,6 @@
-# Tiered emotion classification (dair-ai/emotion)
+# Emotion pipelines (dair-ai/emotion)
+
+## A) Tiered emotion classification
 
 Two-stage design:
 
@@ -9,6 +11,21 @@ Two-stage design:
 
 The **surprise** class in the original dataset is treated as **positive** in tier 1 only; this hierarchy does not emit **surprise** as a leaf label (see `src/tiered_labels.py`).
 
+## B) Sentiment-only classification (new branch flow)
+
+Single-stage 3-class sentiment model:
+
+- `0` = negative (sadness, anger, fear)
+- `1` = neutral (surprise)
+- `2` = positive (joy, love)
+
+Files:
+
+- `src/main_cluster_sentiment.py` — active-learning loop in the same style as `LTS/main_cluster.py`
+- `src/sentiment_labels.py` — source-of-truth mapping from emotion ids to sentiment ids
+- `src/eval_sentiment.py` — test-set evaluation for 3-class sentiment checkpoints
+- `notebooks/emotions_rec_sentiment_repro.ipynb` — Colab workflow for sentiment pipeline
+
 ## Folder layout
 
 ```text
@@ -16,11 +33,14 @@ emotions_rec/
 ├── README.md
 ├── COLAB.md                      ← Google Colab walkthrough
 ├── notebooks/
-│   └── emotions_rec_repro.ipynb  ← data prep + optional train commands
+│   ├── emotions_rec_repro.ipynb  ← tiered data prep + train/eval commands
+│   └── emotions_rec_sentiment_repro.ipynb  ← sentiment data prep + train command
 ├── src/
 │   ├── tiered_labels.py          ← all label id maps
+│   ├── sentiment_labels.py       ← emotion→sentiment map (3 classes)
 │   ├── main_cluster_binary.py    ← tier 1 training only
 │   ├── main_cluster_hierarchical.py  ← train/eval full cascade
+│   ├── main_cluster_sentiment.py ← sentiment-only train loop
 │   ├── preprocessing.py
 │   ├── LDA.py
 │   ├── labeling.py
@@ -33,7 +53,10 @@ emotions_rec/
 │   └── processed/                ← train_inner_emotions_emotion*.csv (generated)
 └── run_configs/
     ├── random_run.txt
-    └── thompson_run.txt
+    ├── thompson_run.txt
+    ├── sentiment_random_run.txt
+    ├── sentiment_thompson_run.txt
+    └── sentiment_eval_run.txt
 ```
 
 ## Quick start (local)
@@ -58,6 +81,41 @@ python src/main_cluster_hierarchical.py eval \
 ```
 
 Replace model paths with your saved checkpoints.
+
+## Quick start (sentiment-only)
+
+From the `emotions_rec` directory:
+
+```bash
+python src/main_cluster_sentiment.py \
+  -sampling thompson \
+  -sample_size 300 \
+  -filter_label True \
+  -model_finetune bert-base-uncased \
+  -labeling qwen \
+  -filename "data/processed/train_inner_emotions_sentiment" \
+  -model text \
+  -metric f1_macro \
+  -val_path "data/processed/val_emotions_sentiment.csv" \
+  -cluster_size 10 \
+  -few_shot_path "prompts/few_shot_examples_sentiment.json" \
+  -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
+  -max_iterations 8 \
+  -confidence_threshold 0.35 \
+  -outputs_dir "outputs" \
+  -console_logs False
+```
+
+Training logs are written to `outputs/sentiment_train_*.log` (useful for long Colab runs).
+
+Evaluate:
+
+```bash
+python src/eval_sentiment.py \
+  -test_path "data/processed/test_emotions_sentiment.csv" \
+  -model_path "models/sentiment_fine_tunned_0_bandit_0" \
+  -base_model "bert-base-uncased"
+```
 
 ## Google Colab
 
