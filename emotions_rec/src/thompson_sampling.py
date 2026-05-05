@@ -32,6 +32,23 @@ class ThompsonSampler:
             self.wins = np.zeros(n_bandits)
             self.losses = np.zeros(n_bandits)
 
+        self._align_bandit_vectors()
+
+    def _align_bandit_vectors(self):
+        """Stale wins.txt from a different cluster count must match n_bandits or beta.rvs breaks."""
+        n = self.n_bandits
+        self.wins = np.asarray(self.wins, dtype=float).reshape(-1)
+        self.losses = np.asarray(self.losses, dtype=float).reshape(-1)
+        if self.wins.size != n or self.losses.size != n:
+            print(
+                f"Warning: resetting Thompson stats (wins/losses length {self.wins.size}/{self.losses.size} "
+                f"!= n_bandits {n}). Remove wins.txt/losses.txt to silence."
+            )
+            self.wins = np.zeros(n)
+            self.losses = np.zeros(n)
+            np.savetxt("wins.txt", self.wins)
+            np.savetxt("losses.txt", self.losses)
+
     def choose_bandit(self, exclude_bandits=None):
         if exclude_bandits is None:
             exclude_bandits = set()

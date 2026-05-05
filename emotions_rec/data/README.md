@@ -1,13 +1,27 @@
 # Data directory
 
-Raw data stays empty in Git; `dair-ai/emotion` is loaded via HuggingFace `datasets` in `notebooks/emotions_rec_sentiment_repro.ipynb`.
+Git tracks only placeholders; real CSVs are produced locally or on Colab.
 
-## processed/
+## Binary task (love vs rest, default)
 
-After running the notebook with **`TARGET_SLUG = "sentiment"`**, expect:
+Run from `emotions_rec`:
 
-- `train_inner_emotions_sentiment.csv`
-- `val_emotions_sentiment.csv`
-- `test_emotions_sentiment.csv`
+```bash
+python scripts/prepare_emotions_binary.py --label love
+```
 
-Runtime artifacts (not tracked) include `*_lda.csv`, `*_training_data.csv`, `*_data_labeled.csv`, and `*_model_results.json` under this folder and `models/` in the experiment root.
+This downloads **`dair-ai/emotion`** via HuggingFace **`datasets`** and writes under **`data/processed/`**:
+
+| File | Role |
+|------|------|
+| `emotions_love_train.csv` | Full training split (binary labels) |
+| `emotions_love_validation.csv` | Full validation split |
+| `emotions_love_test.csv` | Test split |
+| `emotions_love_smoke_train.csv` | Small train subset for quick runs |
+| `emotions_love_smoke_validation.csv` | Small val subset (matches `run_configs/binary_love_quick_run.txt`) |
+
+**Active learning** expects **`-filename`** without `.csv` (prefix only), e.g. `data/processed/emotions_love_smoke_train`, and **`-val_path`** as a full CSV path.
+
+## Runtime artifacts (not in Git)
+
+Under `data/processed/` and the experiment root you may see `*_lda.csv`, `*_training_data.csv`, `*_model_results.json`, plus checkpoints under **`models/`**.

@@ -62,7 +62,7 @@ class Labeling:
         elif self.label_model == "file":
             return None
         else:
-            raise ValueError("Only 'qwen' or 'file' labeling is supported in this notebook.")
+            raise ValueError("Only 'qwen' or 'file' labeling is supported.")
 
     def _base_prompt(self, title: str) -> str:
         examples = self._build_examples_text()
@@ -104,7 +104,7 @@ Output only the number (0-5).
             self.model = None
             self.tokenizer = None
         else:
-            raise ValueError("Only 'qwen' or 'file' labeling is supported in this notebook.")
+            raise ValueError("Only 'qwen' or 'file' labeling is supported.")
 
     def predict_animal_product(self, row):
         label = Labeling.check_already_label(row)

@@ -202,7 +202,11 @@ def run(args):
             trainer.update_model(trainer.get_base_model(), baseline, save_model=False)
             print("No improvement this round.")
 
-        history = json.load(open(model_results_path)) if os.path.exists(model_results_path) else {}
+        history = (
+            json.load(open(model_results_path, encoding="utf-8"))
+            if os.path.exists(model_results_path)
+            else {}
+        )
         history.setdefault(str(chosen_bandit), []).append(results)
         with open(model_results_path, "w", encoding="utf-8") as f:
             json.dump(history, f, indent=2)
@@ -212,7 +216,10 @@ def run(args):
 
     if hasattr(sampler, "wins"):
         ratio = sampler.wins / np.maximum(sampler.wins + sampler.losses, 1e-8)
-        print(f"Best bandit: {int(np.argmax(ratio))}")
+        arm = int(np.argmax(ratio))
+        print(
+            f"Thompson arm with highest win-rate (for bandit diagnostics only; pick checkpoints by validation eval_{args.metric}): arm={arm}"
+        )
 
 
 if __name__ == "__main__":
