@@ -25,6 +25,9 @@ It includes Drive setup, branch checkout, dataset build, training, and evaluatio
 Run:
 
 ```bash
+# Recommended in Colab: redirect all stdout/stderr to a log file.
+log_path="outputs/sentiment_train_$(date +%s).log"
+
 python src/main_cluster_sentiment.py \
   -sampling thompson \
   -sample_size 300 \
@@ -41,7 +44,7 @@ python src/main_cluster_sentiment.py \
   -max_iterations 8 \
   -confidence_threshold 0.35 \
   -outputs_dir "outputs" \
-  -console_logs False
+  -console_logs False > "$log_path" 2>&1
 ```
 
 Logs are saved to:
