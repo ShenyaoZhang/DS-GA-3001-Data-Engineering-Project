@@ -51,6 +51,18 @@ def parse_args():
     parser.add_argument("-num_train_epochs", type=int, default=2)
     parser.add_argument("-max_length", type=int, default=128)
     parser.add_argument("-batch_size", type=int, default=16)
+    parser.add_argument(
+        "-run_id",
+        type=str,
+        default="",
+        help="Separate wins/selected_ids/training caches and model subdirectory (use 'thomp' vs 'rand' between baseline runs).",
+    )
+    parser.add_argument(
+        "-random_uniform_pool",
+        type=str2bool,
+        default=False,
+        help="When sampling=random: draw i.i.d. from the unlabeled pool (ignores LDA clusters). Fair cheap baseline vs Thompson+LDA.",
+    )
     return parser.parse_args()
 
 
@@ -87,8 +99,11 @@ def prepare_validation(path, preprocessor, target_id):
     return validation
 
 
-def create_sampler(name, n_cluster):
-    return ThompsonSampler(n_cluster) if name == "thompson" else RandomSampler(n_cluster)
+def create_sampler(name, n_cluster, run_id="", random_uniform_pool=False):
+    rid = (run_id or "").strip()
+    if name == "thompson":
+        return ThompsonSampler(n_cluster, run_id=rid)
+    return RandomSampler(n_cluster, run_id=rid, uniform_pool=random_uniform_pool)
 
 
 def label_batch(sample_data, args, target_id):
@@ -124,6 +139,9 @@ def label_batch(sample_data, args, target_id):
 def maybe_filter_confidence(df, trainer, threshold):
     if trainer.trainer is None or len(df) == 0:
         return df
+    if "label" in df.columns and (df["label"] == 1).sum() < 12 and len(df) > 24:
+        print("Confidence filter skipped (keep rare positive pseudo-labels).")
+        return df
     _, confs = trainer.get_inference_with_probs(df)
     keep = (confs >= threshold).numpy()
     if keep.sum() < max(int(0.3 * len(df)), 10):
@@ -138,6 +156,18 @@ def run(args):
     ensure_dirs()
     target_id = EMOTION_MAP[args.positive_label]
     print(f"Target emotion: {args.positive_label} ({target_id})")
+
+    rid = args.run_id.strip()
+    sep = f"_{rid}" if rid else ""
+    output_prefix = f"{args.filename}_binary_{args.positive_label}"
+    training_path = f"{output_prefix}{sep}_training_data.csv"
+    model_results_path = f"{output_prefix}{sep}_model_results.json"
+    model_root = os.path.join("models", rid) if rid else "models"
+    results_dir = os.path.join("results", rid) if rid else "results"
+    log_dir = os.path.join("log", rid) if rid else "log"
+    os.makedirs(model_root, exist_ok=True)
+    os.makedirs(results_dir, exist_ok=True)
+    os.makedirs(log_dir, exist_ok=True)
 
     preprocessor = TextPreprocessor()
     validation = prepare_validation(args.val_path, preprocessor, target_id)
@@ -154,12 +184,10 @@ def run(args):
         num_train_epochs=args.num_train_epochs,
         monitor_metric=f"eval_{args.metric}",
         batch_size=args.batch_size,
+        results_dir=results_dir,
+        log_dir=log_dir,
     )
-    sampler = create_sampler(args.sampling, n_cluster)
-
-    output_prefix = f"{args.filename}_binary_{args.positive_label}"
-    training_path = f"{output_prefix}_training_data.csv"
-    model_results_path = f"{output_prefix}_model_results.json"
+    sampler = create_sampler(args.sampling, n_cluster, args.run_id, args.random_uniform_pool)
     baseline = args.baseline
 
     for i in range(args.max_iterations):
@@ -192,7 +220,9 @@ def run(args):
         print(f"Iteration summary | eval_{args.metric}: {score:.6f} | baseline: {baseline:.6f} | reward: {reward:.6f}")
 
         if reward > 0:
-            model_name = f"models/binary_{args.positive_label}_fine_tunned_{i}_bandit_{chosen_bandit}"
+            model_name = os.path.join(
+                model_root, f"binary_{args.positive_label}_fine_tunned_{i}_bandit_{chosen_bandit}"
+            )
             trainer.update_model(model_name, score, save_model=True)
             df.to_csv(training_path, index=False)
             if args.filter_label:
@@ -212,7 +242,8 @@ def run(args):
 
     if hasattr(sampler, "wins"):
         ratio = sampler.wins / np.maximum(sampler.wins + sampler.losses, 1e-8)
-        print(f"Best bandit: {int(np.argmax(ratio))}")
+        arm = int(np.argmax(ratio))
+        print(f"Thompson arm highest win-rate (not argmax checkpoint): arm={arm}")
 
 
 if __name__ == "__main__":

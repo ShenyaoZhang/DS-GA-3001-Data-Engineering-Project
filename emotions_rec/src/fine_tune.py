@@ -23,6 +23,8 @@ class BertFineTuner:
         num_train_epochs=5,
         monitor_metric="eval_f1",
         batch_size=16,
+        results_dir: str = "results",
+        log_dir: str = "log",
     ):
         self.base_model = model_name
         self.tokenizer = BertTokenizer.from_pretrained(model_name)
@@ -40,6 +42,8 @@ class BertFineTuner:
         self.num_train_epochs = num_train_epochs
         self.monitor_metric = monitor_metric
         self.batch_size = batch_size
+        self.results_dir = results_dir
+        self.log_dir = log_dir
 
         model = BertForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
         if dropout:
@@ -135,7 +139,7 @@ class BertFineTuner:
         return out
 
     def train_data(self, df, still_unbalenced):
-        early_stopping_callback = EarlyStoppingCallback(patience=5, monitor=self.monitor_metric, mode="max", log_dir="./log")
+        early_stopping_callback = EarlyStoppingCallback(patience=5, monitor=self.monitor_metric, mode="max", log_dir=self.log_dir)
         tokenized_data, data_collator = self.create_dataset(df, self.test_data)
 
         # Compute dynamic class weights from label distribution
@@ -151,7 +155,7 @@ class BertFineTuner:
             print(f"Dynamic class weights: {class_weights.tolist()}")
 
         training_args = TrainingArguments(
-            output_dir="results",
+            output_dir=self.results_dir,
             eval_strategy="epoch",
             save_strategy="epoch",
             metric_for_best_model=self.monitor_metric,
