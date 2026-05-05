@@ -1,55 +1,23 @@
-# Running the sentiment pipeline on Google Colab
+# Google Colab — `emotions_rec`
 
-This branch is sentiment-only.
+## Before a long GPU run
 
-Labels:
-- `0` negative (sadness, anger, fear)
-- `1` neutral (surprise)
-- `2` positive (joy, love)
-
-## 1) Open the notebook
-
-Open:
-
-- `emotions_rec/notebooks/emotions_rec_sentiment_repro.ipynb`
-
-It includes Drive setup, branch checkout, dataset build, training, and evaluation cells.
-
-## 2) Runtime and auth
-
-- Set runtime to **GPU** in Colab.
-- Provide a Hugging Face token (read access) for Qwen model loading.
-
-## 3) Train
-
-Run:
+From `emotions_rec` in the Colab terminal (or a small code cell):
 
 ```bash
-python -u src/main_cluster_sentiment.py \
-  -sampling thompson \
-  -sample_size 300 \
-  -filter_label True \
-  -model_finetune bert-base-uncased \
-  -labeling qwen \
-  -filename "data/processed/train_inner_emotions_sentiment" \
-  -model text \
-  -metric f1_macro \
-  -val_path "data/processed/val_emotions_sentiment.csv" \
-  -cluster_size 10 \
-  -few_shot_path "prompts/few_shot_examples_sentiment.json" \
-  -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
-  -max_iterations 8 \
-  -confidence_threshold 0.35
-```
-Logs are printed directly in the notebook output.
-
-## 4) Evaluate
-
-```bash
-python src/eval_sentiment.py \
-  -test_path "data/processed/test_emotions_sentiment.csv" \
-  -model_path "models/sentiment_fine_tunned_0_bandit_0" \
-  -base_model "bert-base-uncased"
+python scripts/smoke_check_emotions_rec.py
 ```
 
-Replace `model_path` with your best checkpoint.
+This checks Python syntax, `import torch` / `transformers`, and `--help` on the binary CLIs. It does **not** run training.
+
+## Binary pipeline (supported)
+
+1. Open **`notebooks/emotions_rec_sentiment_pipeline.ipynb`** (name is historical; it runs the **binary** love-vs-rest flow).
+2. GPU runtime + Hugging Face token (read) for Qwen.
+3. Run cells in order: clone/pull → install deps → `prepare_emotions_binary` → training → eval.
+
+Training uses `src/main_cluster_emotion_binary.py`; evaluation uses `src/eval_emotion_binary.py`.
+
+## Sentiment 3-class notebook
+
+**`notebooks/emotions_rec_sentiment_repro.ipynb`** documents a 3-class sentiment mapping, but this branch does **not** include `main_cluster_sentiment.py` or `eval_sentiment.py`. Do not run its training cells as-is unless you add those scripts. For a working Colab path, use **`emotions_rec_sentiment_pipeline.ipynb`** above.

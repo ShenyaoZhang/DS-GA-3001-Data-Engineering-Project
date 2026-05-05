@@ -1,51 +1,64 @@
-# Sentiment Classification Pipeline (dair-ai/emotion)
+# Emotions project (`emotions_rec`)
 
-This branch keeps only the sentiment workflow.
+## What actually ships on this branch
 
-Sentiment labels:
-- `0` negative (sadness, anger, fear)
-- `1` neutral (surprise)
-- `2` positive (joy, love)
+Runnable **binary** pipeline (target emotion vs rest, default **love**):
 
-## Main files
+| Piece | Path |
+|--------|------|
+| Prepare HF CSVs | `scripts/prepare_emotions_binary.py` |
+| Active learning + BERT fine-tune | `src/main_cluster_emotion_binary.py` |
+| Test metrics | `src/eval_emotion_binary.py` |
+| Colab walkthrough | `notebooks/emotions_rec_sentiment_pipeline.ipynb` |
 
-- `src/main_cluster_sentiment.py` — active-learning training loop
-- `src/eval_sentiment.py` — test-set evaluation
-- `src/sentiment_labels.py` — label mapping
-- `notebooks/emotions_rec_sentiment_repro.ipynb` — end-to-end Colab notebook
-
-## Quick start (local)
-
-Train:
+**Fast verification** (no training, ~seconds):
 
 ```bash
-python -u src/main_cluster_sentiment.py \
+cd emotions_rec
+python scripts/smoke_check_emotions_rec.py
+```
+
+**Note:** `main_cluster_sentiment.py`, `eval_sentiment.py`, and `sentiment_labels.py` are **not** in this repository. The notebook `notebooks/emotions_rec_sentiment_repro.ipynb` describes a 3-class sentiment workflow but those driver scripts are absent here—use the binary notebook above or implement/port sentiment drivers separately.
+
+## Binary quick start (local / Colab shell)
+
+From `emotions_rec`:
+
+```bash
+python scripts/prepare_emotions_binary.py --label love
+python -u src/main_cluster_emotion_binary.py \
+  -sample_size 200 \
+  -filename "data/processed/emotions_love_smoke_train" \
+  -val_path "data/processed/emotions_love_smoke_validation.csv" \
+  -balance False \
   -sampling thompson \
-  -sample_size 300 \
   -filter_label True \
   -model_finetune bert-base-uncased \
   -labeling qwen \
-  -filename "data/processed/train_inner_emotions_sentiment" \
   -model text \
-  -metric f1_macro \
-  -val_path "data/processed/val_emotions_sentiment.csv" \
-  -cluster_size 10 \
-  -few_shot_path "prompts/few_shot_examples_sentiment.json" \
+  -baseline 0.10 \
+  -metric f1_pos \
+  -cluster_size 8 \
+  -positive_label love \
   -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
-  -max_iterations 8 \
-  -confidence_threshold 0.35
+  -max_iterations 3 \
+  -num_train_epochs 2 \
+  -max_length 128 \
+  -batch_size 16 \
+  -confidence_threshold 0.40
 ```
-Logs are printed directly to console/notebook output.
 
-Evaluate:
+Evaluate (set `model_path` to a folder under `models/` that contains `config.json`):
 
 ```bash
-python src/eval_sentiment.py \
-  -test_path "data/processed/test_emotions_sentiment.csv" \
-  -model_path "models/sentiment_fine_tunned_0_bandit_0" \
-  -base_model "bert-base-uncased"
+python src/eval_emotion_binary.py \
+  -test_path "data/processed/emotions_love_test.csv" \
+  -model_path "models/binary_love_fine_tunned_0_bandit_0" \
+  -target_emotion love \
+  -base_model "bert-base-uncased" \
+  -max_length 128
 ```
 
 ## Colab
 
-Use `notebooks/emotions_rec_sentiment_repro.ipynb` and follow `COLAB.md`.
+Use `notebooks/emotions_rec_sentiment_pipeline.ipynb` and `COLAB.md`.

@@ -4,9 +4,16 @@ Prepare dair-ai/emotion as binary task: target emotion vs rest.
 
 import argparse
 import os
+import sys
 
 import pandas as pd
 from datasets import load_dataset
+
+# Allow `python scripts/prepare_emotions_binary.py` from repo root (Colab / CLI).
+_ROOT = os.path.dirname(os.path.abspath(__file__))
+_SRC = os.path.join(os.path.dirname(_ROOT), "src")
+if _SRC not in sys.path:
+    sys.path.insert(0, _SRC)
 
 from labeling import EMOTION_MAP
 
