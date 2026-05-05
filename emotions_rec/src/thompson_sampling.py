@@ -5,10 +5,8 @@ import pandas as pd
 
 
 class ThompsonSampler:
-    def __init__(self, n_bandits, alpha=0.5, beta=0.5, decay=0.99, run_id=""):
+    def __init__(self, n_bandits, alpha=0.5, beta=0.5, decay=0.99):
         self.n_bandits = n_bandits
-        self.run_id = (run_id or "").strip()
-        self._pfx = f"{self.run_id}_" if self.run_id else ""
         self.wins = np.zeros(n_bandits)
         self.losses = np.zeros(n_bandits)
         self.alpha = alpha
@@ -16,7 +14,7 @@ class ThompsonSampler:
         self.decay = decay
 
         try:
-            loaded_ids = np.loadtxt(f"{self._pfx}selected_ids.txt", dtype=str)
+            loaded_ids = np.loadtxt("selected_ids.txt", dtype=str)
             if np.isscalar(loaded_ids):
                 loaded_ids = np.array([loaded_ids])
             self.selected_ids = set(loaded_ids.tolist())
@@ -24,17 +22,12 @@ class ThompsonSampler:
             self.selected_ids = set()
 
         try:
-            self.wins = np.loadtxt(f"{self._pfx}wins.txt")
-            self.losses = np.loadtxt(f"{self._pfx}losses.txt")
+            self.wins = np.loadtxt("wins.txt")
+            self.losses = np.loadtxt("losses.txt")
             if np.isscalar(self.wins):
                 self.wins = np.array([self.wins])
             if np.isscalar(self.losses):
                 self.losses = np.array([self.losses])
-            self.wins = np.ravel(self.wins).astype(float)
-            self.losses = np.ravel(self.losses).astype(float)
-            if len(self.wins) != n_bandits or len(self.losses) != n_bandits:
-                self.wins = np.zeros(n_bandits)
-                self.losses = np.zeros(n_bandits)
         except Exception:
             self.wins = np.zeros(n_bandits)
             self.losses = np.zeros(n_bandits)
@@ -64,8 +57,8 @@ class ThompsonSampler:
         self.wins *= self.decay
         self.losses *= self.decay
 
-        np.savetxt(f"{self._pfx}wins.txt", self.wins)
-        np.savetxt(f"{self._pfx}losses.txt", self.losses)
+        np.savetxt("wins.txt", self.wins)
+        np.savetxt("losses.txt", self.losses)
 
     def get_sample_data(self, df, sample_size, filter_label: bool, trainer: Any):
         def sample_from_df(df_in, n):
@@ -154,7 +147,7 @@ class ThompsonSampler:
             chosen_bandit = "fallback_random"
 
         self.selected_ids.update(data["id"].astype(str).tolist())
-        with open(f"{self._pfx}selected_ids.txt", "w") as f:
+        with open("selected_ids.txt", "w") as f:
             f.write("\n".join(sorted(self.selected_ids)))
 
         return data, chosen_bandit

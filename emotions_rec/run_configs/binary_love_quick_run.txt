@@ -1,7 +1,7 @@
-# Default Colab-oriented run (~≤1 hr on GPU T4 + High RAM after HF cache warmed; longer on cold download)
+# Fast binary minority run (~30 mins on Colab T4/V100, depends on queue speed)
 # positive class: love (underrepresented but learnable)
 python -u src/main_cluster_emotion_binary.py \
-  -sample_size 224 \
+  -sample_size 200 \
   -filename "data/processed/emotions_love_smoke_train" \
   -val_path "data/processed/emotions_love_smoke_validation.csv" \
   -balance False \
@@ -10,16 +10,13 @@ python -u src/main_cluster_emotion_binary.py \
   -model_finetune bert-base-uncased \
   -labeling qwen \
   -model text \
-  -baseline 0.08 \
+  -baseline 0.10 \
   -metric f1_pos \
   -cluster_size 8 \
   -positive_label "love" \
-  -few_shot_path "prompts/few_shot_examples_emotion_love.json" \
   -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
-  -max_iterations 5 \
-  -num_train_epochs 3 \
+  -max_iterations 3 \
+  -num_train_epochs 2 \
   -max_length 128 \
-  -batch_size 24 \
-  -confidence_threshold 0.38
-
-# CUDA OOM on T4: use -batch_size 16 instead of 24
+  -batch_size 16 \
+  -confidence_threshold 0.40

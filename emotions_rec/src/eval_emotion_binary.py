@@ -3,19 +3,12 @@ Evaluate a binary emotion model (target emotion vs rest).
 """
 
 import argparse
+import os
 
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.metrics import (
-    accuracy_score,
-    average_precision_score,
-    classification_report,
-    f1_score,
-    precision_score,
-    recall_score,
-    roc_auc_score,
-)
+from sklearn.metrics import accuracy_score, classification_report, f1_score, precision_score, recall_score
 from transformers import BertForSequenceClassification, BertTokenizer
 
 from labeling import EMOTION_MAP
@@ -25,23 +18,16 @@ from preprocessing import TextPreprocessor
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate binary emotion model")
     parser.add_argument("-test_path", type=str, required=True)
-    parser.add_argument("-model_path", type=str, required=True)
+    parser.add_argument(
+        "-model_path",
+        type=str,
+        required=True,
+        help="Local folder with config.json (checkpoint). On Colab prefer an absolute path under .../emotions_rec/models/...",
+    )
     parser.add_argument("-target_emotion", type=str, default="love", choices=sorted(EMOTION_MAP.keys()))
     parser.add_argument("-base_model", type=str, default="bert-base-uncased")
     parser.add_argument("-batch_size", type=int, default=64)
     parser.add_argument("-max_length", type=int, default=128)
-    parser.add_argument(
-        "-tune_threshold_val_path",
-        type=str,
-        default=None,
-        help="Optional validation CSV (same schema as test). Search probability threshold maximizing F1 for the positive class, then evaluate test at that threshold.",
-    )
-    parser.add_argument(
-        "-positive_prob_threshold",
-        type=float,
-        default=None,
-        help="Fixed threshold on P(positive): predict 1 if prob >= this. Ignored when -tune_threshold_val_path is set.",
-    )
     return parser.parse_args()
 
 
@@ -54,9 +40,9 @@ def prepare_test_data(path, target_id):
     return df
 
 
-def predict_probs_batches(df, model, tokenizer, device, batch_size, max_length):
+def predict_labels(df, model, tokenizer, device, batch_size, max_length):
     texts = df["training_text"].fillna("").astype(str).tolist()
-    probs_all = []
+    preds, confs = [], []
     for start in range(0, len(texts), batch_size):
         batch = texts[start : start + batch_size]
         inputs = tokenizer(
@@ -69,26 +55,21 @@ def predict_probs_batches(df, model, tokenizer, device, batch_size, max_length):
         with torch.inference_mode():
             logits = model(**inputs).logits
             probs = torch.softmax(logits, dim=1)
-        probs_all.append(probs.cpu().numpy())
-    return np.concatenate(probs_all, axis=0)
+        preds.append(probs.argmax(dim=1).cpu().numpy())
+        confs.append(probs.max(dim=1).values.cpu().numpy())
+    return np.concatenate(preds), np.concatenate(confs)
 
 
-def eval_at_threshold(y_true, probs, t):
-    p_pos = probs[:, 1]
-    y_pred = (p_pos >= t).astype(int)
-    return y_pred, p_pos
-
-
-def tune_threshold(y_true, probs):
-    p_pos = probs[:, 1]
-    best_t, best_f1 = 0.5, -1.0
-    for t in np.linspace(0.05, 0.95, 19):
-        y_pred = (p_pos >= t).astype(int)
-        f1 = f1_score(y_true, y_pred, pos_label=1, zero_division=0)
-        if f1 > best_f1:
-            best_f1 = f1
-            best_t = float(t)
-    return best_t, best_f1
+def _normalize_model_path(raw: str) -> str:
+    """Fix common typo 'odels/...' -> 'models/...' so HF Hub is not queried by mistake."""
+    p = raw.strip()
+    if p.startswith("./odels/"):
+        p = "./models/" + p[len("./odels/") :]
+    elif p.startswith("odels/"):
+        p = "models/" + p[len("odels/") :]
+    elif p.startswith("odels"):
+        p = "m" + p
+    return p
 
 
 def main():
@@ -97,27 +78,23 @@ def main():
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     df = prepare_test_data(args.test_path, target_id)
+    model_path = os.path.abspath(os.path.expanduser(_normalize_model_path(args.model_path)))
+    if not os.path.isdir(model_path):
+        raise FileNotFoundError(
+            f"-model_path is not an existing directory: {model_path!r}\n"
+            "Use the folder that contains config.json, e.g.\n"
+            "  /content/drive/MyDrive/DS-GA-3001-Data-Engineering-Project/emotions_rec/models/binary_love_fine_tunned_2_bandit_2\n"
+            "Common mistake: typing odels/ instead of models/ makes Transformers hit huggingface.co/odels/... (404)."
+        )
+    if not os.path.isfile(os.path.join(model_path, "config.json")):
+        raise FileNotFoundError(f"No config.json under {model_path!r}.")
+
     tokenizer = BertTokenizer.from_pretrained(args.base_model)
-    model = BertForSequenceClassification.from_pretrained(args.model_path, num_labels=2).to(device).eval()
+    model = BertForSequenceClassification.from_pretrained(
+        model_path, num_labels=2, local_files_only=True
+    ).to(device).eval()
     y_true = df["label"].astype(int).values
-    probs = predict_probs_batches(df, model, tokenizer, device, args.batch_size, args.max_length)
-
-    threshold = None
-    if args.tune_threshold_val_path:
-        vdf = prepare_test_data(args.tune_threshold_val_path, target_id)
-        v_probs = predict_probs_batches(vdf, model, tokenizer, device, args.batch_size, args.max_length)
-        vy = vdf["label"].astype(int).values
-        threshold, vtune_f1 = tune_threshold(vy, v_probs)
-        print(f"\n=== Threshold tuning (validation) → t={threshold:.4f} (max F1 pos≈{vtune_f1:.4f}) ===")
-    elif args.positive_prob_threshold is not None:
-        threshold = args.positive_prob_threshold
-        print(f"\n=== Using fixed P(positive) threshold={threshold:.4f} ===")
-
-    if threshold is not None:
-        y_pred, y_conf_pos = eval_at_threshold(y_true, probs, threshold)
-    else:
-        y_pred = probs.argmax(axis=1)
-        y_conf_pos = probs.max(axis=1)
+    y_pred, y_conf = predict_labels(df, model, tokenizer, device, args.batch_size, args.max_length)
 
     print(f"\n=== Binary evaluation ({args.target_emotion} vs rest) ===")
     print(classification_report(y_true, y_pred, labels=[0, 1], target_names=["other", args.target_emotion], zero_division=0))
@@ -126,12 +103,7 @@ def main():
     print(f"Recall (pos):     {recall_score(y_true, y_pred, pos_label=1, zero_division=0):.4f}")
     print(f"F1 (pos):         {f1_score(y_true, y_pred, pos_label=1, zero_division=0):.4f}")
     print(f"F1 Macro:         {f1_score(y_true, y_pred, average='macro', zero_division=0):.4f}")
-    try:
-        print(f"ROC-AUC (pos):    {roc_auc_score(y_true, probs[:, 1]):.4f}")
-    except ValueError:
-        print("ROC-AUC (pos):    n/a (needs both classes on test)")
-    print(f"PR-AUC (pos):    {average_precision_score(y_true, probs[:, 1]):.4f}")
-    print(f"Mean max-prob:   {float(np.mean(probs.max(axis=1))):.4f}")
+    print(f"Mean confidence:  {float(np.mean(y_conf)):.4f}")
 
 
 if __name__ == "__main__":

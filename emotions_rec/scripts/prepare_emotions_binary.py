@@ -1,18 +1,9 @@
 """
-Prepare dair-ai/emotion CSVs for target-emotion vs rest.
-
-Output column `label` stays the **raw dataset emotion id** (0–5). Smoke splits are class-balanced
-by raw emotions; `main_cluster_emotion_binary` / `eval_emotion_binary` binarize using `-positive_label`.
+Prepare dair-ai/emotion as binary task: target emotion vs rest.
 """
 
 import argparse
 import os
-import sys
-
-_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_SRC = os.path.join(_REPO_ROOT, "src")
-if _SRC not in sys.path:
-    sys.path.insert(0, _SRC)
 
 import pandas as pd
 from datasets import load_dataset
@@ -37,10 +28,16 @@ def split_to_df(split_data, id_offset=0):
             {
                 "id": id_offset + i,
                 "title": str(ex["text"]).strip(),
-                "label": int(ex["label"]),
+                "raw_label": int(ex["label"]),
             }
         )
     return pd.DataFrame(rows)
+
+
+def to_binary(df, target_id):
+    out = df.copy()
+    out["label"] = out["raw_label"].astype(int).apply(lambda x: 1 if x == target_id else 0)
+    return out[["id", "title", "label"]]
 
 
 def save_csv(df, path):
@@ -60,10 +57,9 @@ def main():
     val = split_to_df(ds["validation"], len(train))
     test = split_to_df(ds["test"], len(train) + len(val))
 
-    # CSV `label` must stay as raw dair-ai/emotion ids (0–5): training code maps to binary internally.
-    train_gold = train[["id", "title", "label"]].copy()
-    val_gold = val[["id", "title", "label"]].copy()
-    test_gold = test[["id", "title", "label"]].copy()
+    train_bin = to_binary(train, target_id)
+    val_bin = to_binary(val, target_id)
+    test_bin = to_binary(test, target_id)
 
     out = args.output_dir
     train_path = os.path.join(out, f"{base}_train.csv")
@@ -72,20 +68,20 @@ def main():
     smoke_train_path = os.path.join(out, f"{base}_smoke_train.csv")
     smoke_val_path = os.path.join(out, f"{base}_smoke_validation.csv")
 
-    save_csv(train_gold, train_path)
-    save_csv(val_gold, val_path)
-    save_csv(test_gold, test_path)
+    save_csv(train_bin, train_path)
+    save_csv(val_bin, val_path)
+    save_csv(test_bin, test_path)
 
-    pos_train = train_gold[train_gold["label"] == target_id]
-    neg_train = train_gold[train_gold["label"] != target_id]
+    pos_train = train_bin[train_bin["label"] == 1]
+    neg_train = train_bin[train_bin["label"] == 0]
     n_pos = min(len(pos_train), args.smoke_train_n // 3)
     n_neg = min(len(neg_train), args.smoke_train_n - n_pos)
     smoke_train = pd.concat(
         [pos_train.sample(n_pos, random_state=args.seed), neg_train.sample(n_neg, random_state=args.seed)]
     ).sample(frac=1, random_state=args.seed).reset_index(drop=True)
 
-    pos_val = val_gold[val_gold["label"] == target_id]
-    neg_val = val_gold[val_gold["label"] != target_id]
+    pos_val = val_bin[val_bin["label"] == 1]
+    neg_val = val_bin[val_bin["label"] == 0]
     n_pos_v = min(len(pos_val), args.smoke_val_n // 3)
     n_neg_v = min(len(neg_val), args.smoke_val_n - n_pos_v)
     smoke_val = pd.concat(
@@ -96,12 +92,9 @@ def main():
     save_csv(smoke_val, smoke_val_path)
 
     print(f"[prepare_emotions_binary] target='{target}' positive_id={target_id}")
-    bin_train = train_gold["label"].apply(lambda x: 1 if x == target_id else 0)
-    print("[prepare_emotions_binary] train (binary target vs rest):", bin_train.value_counts().to_dict())
-    bin_val = val_gold["label"].apply(lambda x: 1 if x == target_id else 0)
-    print("[prepare_emotions_binary] val (binary target vs rest):", bin_val.value_counts().to_dict())
-    bin_test = test_gold["label"].apply(lambda x: 1 if x == target_id else 0)
-    print("[prepare_emotions_binary] test (binary target vs rest):", bin_test.value_counts().to_dict())
+    print("[prepare_emotions_binary] train distribution:", train_bin["label"].value_counts().to_dict())
+    print("[prepare_emotions_binary] val distribution:", val_bin["label"].value_counts().to_dict())
+    print("[prepare_emotions_binary] test distribution:", test_bin["label"].value_counts().to_dict())
     print("[prepare_emotions_binary] use this with main_cluster_emotion_binary.py:")
     print(
         f'  -filename "{os.path.join(out, base + "_smoke_train").replace(".csv", "")}" '
