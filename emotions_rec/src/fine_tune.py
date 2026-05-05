@@ -78,6 +78,7 @@ class BertFineTuner:
         self.model = model.to(self.device)
         self.base_model = nm
         self.trainer = None
+        self.run_clf = False  # inference/filter paths require Trainer.predict()
 
     def _text_col(self, df):
         if "training_text" in df.columns:
