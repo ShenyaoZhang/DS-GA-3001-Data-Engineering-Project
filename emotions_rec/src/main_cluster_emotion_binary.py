@@ -41,7 +41,13 @@ def parse_args():
     parser.add_argument("-labeling", type=str, default="qwen")
     parser.add_argument("-model", type=str, default="text")
     parser.add_argument("-metric", type=str, default="f1_pos")
-    parser.add_argument("-baseline", type=float, default=0.10)
+    parser.add_argument(
+        "-baseline",
+        type=float,
+        default=0.10,
+        help="First-iteration hurdle for reward=score−baseline only (use a low value, e.g. 0.05–0.10 for f1_pos). "
+        "Do NOT use 0.5—validation f1_pos is rarely that high.",
+    )
     parser.add_argument("-cluster_size", type=int, default=8)
     parser.add_argument("-positive_label", type=str, default="love", choices=sorted(EMOTION_MAP.keys()))
     parser.add_argument("-hf_model_id", type=str, default="Qwen/Qwen2.5-3B-Instruct")
@@ -169,6 +175,12 @@ def run(args):
     os.makedirs(results_dir, exist_ok=True)
     os.makedirs(log_dir, exist_ok=True)
 
+    if args.baseline > 0.25 and args.metric.endswith("pos"):
+        print(
+            f"[warn] -baseline={args.baseline:g} is very high for `{args.metric}`; "
+            f"runs often report eval_f1_pos < 0.4. Prefer -baseline 0.05–0.10 so iteration 1 can save."
+        )
+
     preprocessor = TextPreprocessor()
     validation = prepare_validation(args.val_path, preprocessor, target_id)
     data, n_cluster = load_or_build_lda(args.filename, args.cluster_size, preprocessor)
@@ -229,8 +241,8 @@ def run(args):
                 trainer.set_clf(True)
             print(f"Model improved and saved: {model_name}")
         else:
-            trainer.update_model(trainer.get_base_model(), baseline, save_model=False)
-            print("No improvement this round.")
+            trainer.reset_to_initial_pretrained()
+            print("No improvement this round (BERT reset to pretrained; last_model_acc unchanged).")
 
         history = json.load(open(model_results_path)) if os.path.exists(model_results_path) else {}
         history.setdefault(str(chosen_bandit), []).append(results)

@@ -52,6 +52,8 @@ class BertFineTuner:
 
         self.model = model
         self.model.to(self.device)
+        self._initial_pretrained_name = model_name  # Reload target when a round rejects the update
+        self._initial_dropout = dropout
 
     def set_clf(self, set_value: bool):
         self.run_clf = set_value
@@ -64,6 +66,18 @@ class BertFineTuner:
 
     def get_base_model(self):
         return self.base_model
+
+    def reset_to_initial_pretrained(self):
+        """Discard in-memory fine-tuned weights after a rejected round."""
+        nm = self._initial_pretrained_name
+        model = BertForSequenceClassification.from_pretrained(nm, num_labels=self.num_labels)
+        d = self._initial_dropout
+        if d:
+            model.config.hidden_dropout_prob = d
+            model.config.attention_probs_dropout_prob = d
+        self.model = model.to(self.device)
+        self.base_model = nm
+        self.trainer = None
 
     def _text_col(self, df):
         if "training_text" in df.columns:
@@ -241,11 +255,12 @@ class BertFineTuner:
         if self.trainer is not None:
             self.trainer.save_model(path)
 
-    def update_model(self, model_name, model_acc, save_model: bool):
+    def update_model(self, model_name, model_acc, save_model: bool, record_metric: bool = True):
         if save_model and self.trainer is not None:
             self.save_model(model_name)
 
-        self.last_model_acc = {model_name: model_acc}
+        if record_metric:
+            self.last_model_acc = {model_name: model_acc}
         self.base_model = model_name
 
 
