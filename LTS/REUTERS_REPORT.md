@@ -10,6 +10,7 @@ All quantitative numbers are produced automatically by
 - `LTS/results/lts_summary.csv`
 - `LTS/results/lts_thompson_vs_random.csv`
 - `LTS/results/REUTERS_REPORT.md` (machine-readable, table-heavy)
+- `LTS/results/figures/*.png` (the visualizations embedded in this report)
 
 To regenerate these from a fresh checkout:
 
@@ -88,6 +89,13 @@ near 0.98 F1 — the dataset is comparatively easy because `earn` headlines are
 highly stylized — so there is little headroom for the sampler to matter and
 the gap shrinks to +0.0010 F1.
 
+![Binary `earn` triage — Random vs Thompson across splits](results/figures/binary_final_metrics.png)
+
+The chart above shows the same three metrics side-by-side. The accuracy and
+weighted-F1 panels visually confirm that Thompson is at or above random for
+every split; the macro-F1 panel highlights ModLewis as the split where the
+sampler choice matters most.
+
 ### 5.2.3 Sample Composition and Positive-Class Enrichment
 
 Because the LTS labeling budget is fixed, the more useful question is: under
@@ -108,6 +116,14 @@ the cluster(s) that are densely populated with `earn` headlines. ModApte and
 ModLewis are both already roughly 20–30% positive at the pool level, so the
 absolute lift is smaller, but Thompson still extracts a denser positive sample
 than random in both cases.
+
+![Positive-class enrichment under fixed labeling budget](results/figures/binary_positive_enrichment.png)
+
+This is the same plot that section 5.1 used for 20 Newsgroups: light-grey is
+the natural pool rate, dark-grey is the random labeled sample, and blue is
+the Thompson labeled sample under the same labeling budget. The blue spike on
+ModHayes is the clearest single piece of evidence that LTS is doing what it
+claims: concentrating labeling spend on the rare, useful regions of the pool.
 
 ### 5.2.4 Pseudo-Label Quality (Qwen vs. Gold)
 
@@ -132,6 +148,13 @@ Qwen is as the labeling oracle for each task:
 For binary triage Qwen is a strong oracle (≈ 80–86% agreement). For multi-class
 triage Qwen is barely better than random (≈ 10–16% agreement), which is the
 single most important observation in this report.
+
+![Pseudo-label quality on sampled rows](results/figures/pseudo_label_agreement.png)
+
+The left half of the chart (binary runs) hovers around 80%; the right half
+(multi-class runs) collapses below 20%. The horizontal dashed line at 50%
+makes the gap between "useful oracle" and "near-random oracle" easy to read
+at a glance.
 
 ### 5.2.5 Final Validation Metrics — Multi-Class Triage (6 classes)
 
@@ -163,6 +186,14 @@ Two observations:
 The comparatively large weighted-F1 on ModHayes / ModLewis Thompson runs is
 *not* a sign that the multi-class pipeline is working well — it is mostly
 the model's accuracy on `other`, which is by far the largest class.
+
+![Multi-class triage (6 classes) — Random vs Thompson](results/figures/multiclass_final_metrics.png)
+
+The chart shows the multi-class metrics side-by-side. Note the huge accuracy
+gap on ModLewis (0.61 vs. 0.01) versus the much smaller macro-F1 gap (0.13 vs.
+0.01) — Thompson is correctly classifying the dominant `other` class while
+both samplers struggle on every minority class. That gap between weighted /
+accuracy and macro F1 is precisely the imbalance signature called out above.
 
 ### 5.2.6 Why Multi-Class Performance Is Low — Diagnosis
 
@@ -198,6 +229,14 @@ Because BERT trains on whatever Qwen produces, the downstream classifier
 inherits this skew and learns to predict `trade` and `other` for almost
 everything. That is precisely what the multi-class confusion in
 section 5.2.5 reflects.
+
+![Qwen multi-class output distribution vs gold (sampled rows)](results/figures/qwen_vs_gold_distribution.png)
+
+The figure makes the prompt-quality story unmistakable: the orange `Qwen`
+bars are dominated by `trade` in every panel (≈ 72–75% of all sampled rows),
+while the green `Gold` bars are dominated by `other` and `earn`. No amount of
+sampler intelligence downstream can compensate for an oracle that classifies
+three quarters of the dataset as `trade`.
 
 ### 5.2.7 Interpretation
 

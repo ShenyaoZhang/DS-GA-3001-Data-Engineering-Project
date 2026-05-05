@@ -16,7 +16,13 @@ auto-detects its Thompson run and, when present, the matching random run
      One row per (dataset, task_type, sampling) experiment with best /
      last-round eval metrics and Qwen pseudo-label agreement.
   2. A Thompson-vs-random delta CSV at  LTS/results/lts_thompson_vs_random.csv
-  3. A Markdown report at  LTS/results/REUTERS_REPORT.md
+  3. A set of PNG figures under LTS/results/figures/
+     - binary_final_metrics.png        (random vs Thompson, weighted/macro F1, acc)
+     - multiclass_final_metrics.png    (same, multi-class runs)
+     - binary_positive_enrichment.png  (pool / random / Thompson positive rate)
+     - pseudo_label_agreement.png      (Qwen-vs-gold agreement per run)
+     - qwen_vs_gold_distribution.png   (per-class output distribution skew)
+  4. A Markdown report at  LTS/results/REUTERS_REPORT.md
      Suitable for pasting into the team notebook (section 5.2 Reuters).
 
 Run from the LTS folder:
@@ -39,7 +45,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import pandas as pd
+import matplotlib
+
+matplotlib.use("Agg")  # no display required
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -404,9 +415,304 @@ def thompson_vs_random_df(runs: List[RunSummary]) -> pd.DataFrame:
     ).reset_index(drop=True)
 
 
+# ---------------------------------------------------------------------------
+# plotting
+# ---------------------------------------------------------------------------
+
+
+_BAR_COLORS = {
+    "random": "#7f8c8d",     # neutral grey
+    "thompson": "#2980b9",   # LTS blue
+    "pool": "#bdc3c7",
+    "qwen": "#e67e22",
+    "gold": "#27ae60",
+}
+
+
+def _save_fig(fig: plt.Figure, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.tight_layout()
+    fig.savefig(path, dpi=140, bbox_inches="tight")
+    plt.close(fig)
+
+
+def _final_metrics_chart(
+    pairs: pd.DataFrame,
+    task_type: str,
+    out_path: Path,
+    title: str,
+) -> Optional[Path]:
+    """Grouped bar chart: per-split Thompson vs Random for F1, macro F1, acc."""
+    df = pairs[pairs["task_type"] == task_type].copy()
+    if df.empty:
+        return None
+    df = df.sort_values("split").reset_index(drop=True)
+    splits = df["split"].tolist()
+    metrics = [
+        ("Weighted F1", "thompson_best_f1", "random_best_f1"),
+        ("Macro F1", "thompson_best_f1_macro", "random_best_f1_macro"),
+        ("Accuracy", "thompson_best_acc", "random_best_acc"),
+    ]
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4.5), sharey=True)
+    x = np.arange(len(splits))
+    width = 0.38
+    for ax, (label, t_col, r_col) in zip(axes, metrics):
+        random_vals = [
+            v if pd.notna(v) else np.nan for v in df[r_col].tolist()
+        ]
+        thompson_vals = [
+            v if pd.notna(v) else np.nan for v in df[t_col].tolist()
+        ]
+        b1 = ax.bar(
+            x - width / 2,
+            random_vals,
+            width,
+            label="Random",
+            color=_BAR_COLORS["random"],
+        )
+        b2 = ax.bar(
+            x + width / 2,
+            thompson_vals,
+            width,
+            label="Thompson (LTS)",
+            color=_BAR_COLORS["thompson"],
+        )
+        ax.set_title(label)
+        ax.set_xticks(x)
+        ax.set_xticklabels(splits)
+        ax.set_ylim(0, 1.05)
+        ax.grid(axis="y", linestyle=":", alpha=0.4)
+        for bars in (b1, b2):
+            for bar in bars:
+                h = bar.get_height()
+                if pd.notna(h):
+                    ax.text(
+                        bar.get_x() + bar.get_width() / 2,
+                        h + 0.012,
+                        f"{h:.2f}",
+                        ha="center",
+                        va="bottom",
+                        fontsize=8,
+                    )
+    axes[0].set_ylabel("Best validation score")
+    axes[-1].legend(loc="upper right", framealpha=0.9)
+    fig.suptitle(title, fontsize=13)
+    _save_fig(fig, out_path)
+    return out_path
+
+
+def _binary_enrichment_chart(
+    pairs: pd.DataFrame, out_path: Path
+) -> Optional[Path]:
+    df = pairs[pairs["task_type"] == "binary"].copy()
+    if df.empty:
+        return None
+    df = df.sort_values("split").reset_index(drop=True)
+    splits = df["split"].tolist()
+    pool = (df["pool_positive_rate"] * 100).tolist()
+    rand = (df["random_sample_positive_rate"] * 100).tolist()
+    thom = (df["thompson_sample_positive_rate"] * 100).tolist()
+    x = np.arange(len(splits))
+    width = 0.27
+    fig, ax = plt.subplots(figsize=(8.5, 4.8))
+    bars = [
+        ax.bar(x - width, pool, width, label="Pool", color=_BAR_COLORS["pool"]),
+        ax.bar(x, rand, width, label="Random sample", color=_BAR_COLORS["random"]),
+        ax.bar(
+            x + width,
+            thom,
+            width,
+            label="Thompson sample (LTS)",
+            color=_BAR_COLORS["thompson"],
+        ),
+    ]
+    ax.set_xticks(x)
+    ax.set_xticklabels(splits)
+    ax.set_ylabel("Positive (`earn`) rate (%)")
+    ax.set_title("Positive-class enrichment under fixed labeling budget")
+    ax.grid(axis="y", linestyle=":", alpha=0.4)
+    ax.legend()
+    for grp in bars:
+        for b in grp:
+            h = b.get_height()
+            if pd.notna(h):
+                ax.text(
+                    b.get_x() + b.get_width() / 2,
+                    h + 0.6,
+                    f"{h:.1f}%",
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                )
+    _save_fig(fig, out_path)
+    return out_path
+
+
+def _pseudo_agreement_chart(
+    summary: pd.DataFrame, out_path: Path
+) -> Optional[Path]:
+    df = summary.dropna(subset=["pseudo_agreement"]).copy()
+    if df.empty:
+        return None
+    df["row_label"] = (
+        df["split"] + " " + df["task_type"] + " (" + df["sampling"] + ")"
+    )
+    df = df.sort_values(["task_type", "split", "sampling"]).reset_index(drop=True)
+    fig, ax = plt.subplots(figsize=(9.5, 4.8))
+    colors = [
+        _BAR_COLORS["thompson"] if s == "thompson" else _BAR_COLORS["random"]
+        for s in df["sampling"]
+    ]
+    bars = ax.bar(
+        df["row_label"], (df["pseudo_agreement"] * 100).tolist(), color=colors
+    )
+    ax.set_ylabel("Qwen ↔ gold agreement (%)")
+    ax.set_title("Pseudo-label quality on sampled rows")
+    ax.set_ylim(0, 100)
+    ax.axhline(50, color="black", linestyle="--", linewidth=0.8, alpha=0.4)
+    ax.grid(axis="y", linestyle=":", alpha=0.4)
+    plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
+    for b, v in zip(bars, df["pseudo_agreement"].tolist()):
+        ax.text(
+            b.get_x() + b.get_width() / 2,
+            b.get_height() + 1,
+            f"{100 * v:.1f}%",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+    handles = [
+        plt.Rectangle((0, 0), 1, 1, color=_BAR_COLORS["random"], label="Random"),
+        plt.Rectangle(
+            (0, 0), 1, 1, color=_BAR_COLORS["thompson"], label="Thompson (LTS)"
+        ),
+    ]
+    ax.legend(handles=handles, loc="upper right")
+    _save_fig(fig, out_path)
+    return out_path
+
+
+def _qwen_vs_gold_distribution_chart(
+    runs: List[RunSummary], out_path: Path
+) -> Optional[Path]:
+    mc_runs = [
+        r
+        for r in runs
+        if r.task_type == "multiclass" and r.qwen_label_distribution
+    ]
+    if not mc_runs:
+        return None
+    n = len(mc_runs)
+    cols = 2 if n > 1 else 1
+    rows = (n + cols - 1) // cols
+    fig, axes = plt.subplots(
+        rows, cols, figsize=(7 * cols, 3.6 * rows), squeeze=False
+    )
+    for idx, r in enumerate(mc_runs):
+        ax = axes[idx // cols][idx % cols]
+        keys = sorted(
+            set(r.qwen_label_distribution) | set(r.gold_label_distribution)
+        )
+        qwen_total = sum(r.qwen_label_distribution.values()) or 1
+        gold_total = sum(r.gold_label_distribution.values()) or 1
+        qwen = [
+            100 * r.qwen_label_distribution.get(k, 0) / qwen_total for k in keys
+        ]
+        gold = [
+            100 * r.gold_label_distribution.get(k, 0) / gold_total for k in keys
+        ]
+        x = np.arange(len(keys))
+        width = 0.4
+        ax.bar(x - width / 2, qwen, width, color=_BAR_COLORS["qwen"], label="Qwen")
+        ax.bar(x + width / 2, gold, width, color=_BAR_COLORS["gold"], label="Gold")
+        ax.set_xticks(x)
+        ax.set_xticklabels(keys, rotation=20, ha="right")
+        ax.set_ylim(0, 100)
+        ax.set_ylabel("Share of sampled rows (%)")
+        ax.set_title(f"{r.split} ({r.sampling}, n={r.pseudo_label_rows})")
+        ax.grid(axis="y", linestyle=":", alpha=0.4)
+        ax.legend(loc="upper right", fontsize=9)
+    # hide leftover empty axes
+    for idx in range(n, rows * cols):
+        axes[idx // cols][idx % cols].axis("off")
+    fig.suptitle(
+        "Qwen multi-class output distribution vs gold (sampled rows)",
+        fontsize=13,
+    )
+    _save_fig(fig, out_path)
+    return out_path
+
+
+def make_plots(
+    runs: List[RunSummary],
+    summary: pd.DataFrame,
+    pairs: pd.DataFrame,
+    figures_dir: Path,
+) -> Dict[str, Path]:
+    figures_dir.mkdir(parents=True, exist_ok=True)
+    out: Dict[str, Path] = {}
+    p1 = _final_metrics_chart(
+        pairs,
+        "binary",
+        figures_dir / "binary_final_metrics.png",
+        "Binary `earn` triage — Random vs Thompson",
+    )
+    if p1:
+        out["binary_final_metrics"] = p1
+    p2 = _final_metrics_chart(
+        pairs,
+        "multiclass",
+        figures_dir / "multiclass_final_metrics.png",
+        "Multi-class triage (6 classes) — Random vs Thompson",
+    )
+    if p2:
+        out["multiclass_final_metrics"] = p2
+    p3 = _binary_enrichment_chart(
+        pairs, figures_dir / "binary_positive_enrichment.png"
+    )
+    if p3:
+        out["binary_positive_enrichment"] = p3
+    p4 = _pseudo_agreement_chart(
+        summary, figures_dir / "pseudo_label_agreement.png"
+    )
+    if p4:
+        out["pseudo_label_agreement"] = p4
+    p5 = _qwen_vs_gold_distribution_chart(
+        runs, figures_dir / "qwen_vs_gold_distribution.png"
+    )
+    if p5:
+        out["qwen_vs_gold_distribution"] = p5
+    return out
+
+
+# ---------------------------------------------------------------------------
+# markdown rendering
+# ---------------------------------------------------------------------------
+
+
 def render_markdown_report(
-    runs: List[RunSummary], pairs: pd.DataFrame, summary: pd.DataFrame
+    runs: List[RunSummary],
+    pairs: pd.DataFrame,
+    summary: pd.DataFrame,
+    figures: Optional[Dict[str, Path]] = None,
+    report_path: Optional[Path] = None,
 ) -> str:
+    figures = figures or {}
+
+    def _img(key: str, alt: str) -> str:
+        if key not in figures:
+            return ""
+        if report_path is not None:
+            try:
+                rel = Path(figures[key]).resolve().relative_to(
+                    report_path.resolve().parent
+                )
+            except ValueError:
+                rel = Path(figures[key])
+        else:
+            rel = Path(figures[key])
+        return f"\n![{alt}]({rel.as_posix()})\n\n"
+
     lines: List[str] = []
     lines.append("# Reuters Results: Random Sampling vs Thompson Sampling (LTS)\n")
     lines.append(
@@ -475,6 +781,8 @@ def render_markdown_report(
                     dm=_fmt(r["delta_best_f1_macro"]),
                 )
             )
+    lines.append(_img("binary_final_metrics", "Binary final metrics"))
+    lines.append(_img("multiclass_final_metrics", "Multi-class final metrics"))
 
     # ------------------------------------------------------------------
     # Section 3: positive-class enrichment (binary only)
@@ -509,6 +817,9 @@ def render_markdown_report(
                     lift=_fmt_pct(lift),
                 )
             )
+        lines.append(
+            _img("binary_positive_enrichment", "Binary positive-class enrichment")
+        )
 
     # ------------------------------------------------------------------
     # Section 4: pseudo-label quality (Qwen vs gold)
@@ -529,6 +840,7 @@ def render_markdown_report(
                     ag=_fmt(r["pseudo_agreement"]),
                 )
             )
+        lines.append(_img("pseudo_label_agreement", "Pseudo-label agreement"))
 
     # ------------------------------------------------------------------
     # Section 5: Qwen multi-class label distribution skew
@@ -541,6 +853,12 @@ def render_markdown_report(
             "emitted vs what the gold labels are for the same sampled rows. "
             "A heavy skew toward one class (typically `trade`) indicates a "
             "prompting/calibration limitation rather than a pipeline bug.\n"
+        )
+        lines.append(
+            _img(
+                "qwen_vs_gold_distribution",
+                "Qwen vs gold per-class distribution",
+            )
         )
         for r in mc_runs:
             lines.append(
@@ -677,10 +995,20 @@ def main() -> None:
     summary_csv = out_dir / "lts_summary.csv"
     pairs_csv = out_dir / "lts_thompson_vs_random.csv"
     report_md = out_dir / "REUTERS_REPORT.md"
+    figures_dir = out_dir / "figures"
 
     summary_df.to_csv(summary_csv, index=False)
     pairs_df.to_csv(pairs_csv, index=False)
-    report_md.write_text(render_markdown_report(runs, pairs_df, summary_df))
+
+    figures = make_plots(runs, summary_df, pairs_df, figures_dir)
+    for k, v in figures.items():
+        print(f"[analyze] figure {k} -> {v}")
+
+    report_md.write_text(
+        render_markdown_report(
+            runs, pairs_df, summary_df, figures=figures, report_path=report_md
+        )
+    )
 
     print(f"[analyze] wrote {summary_csv}")
     print(f"[analyze] wrote {pairs_csv}")
