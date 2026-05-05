@@ -28,6 +28,11 @@ class ThompsonSampler:
                 self.wins = np.array([self.wins])
             if np.isscalar(self.losses):
                 self.losses = np.array([self.losses])
+            self.wins = np.ravel(self.wins).astype(float)
+            self.losses = np.ravel(self.losses).astype(float)
+            if len(self.wins) != n_bandits or len(self.losses) != n_bandits:
+                self.wins = np.zeros(n_bandits)
+                self.losses = np.zeros(n_bandits)
         except Exception:
             self.wins = np.zeros(n_bandits)
             self.losses = np.zeros(n_bandits)
