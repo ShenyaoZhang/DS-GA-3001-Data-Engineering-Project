@@ -1,16 +1,17 @@
 """
 Hierarchical Emotion Classification Pipeline
 
-Two-tier cascade:
-  Tier 1: Binary (negative=0 / positive=1)  — runs main_cluster_binary.py
-  Tier 2: Sub-classifiers
-    neg_sub: sadness(0) vs anger(1) vs fear(2)
-    pos_sub: joy(0) vs love(1) vs surprise(2)
+Two-tier cascade (see tiered_labels.py for id maps):
+  Tier 1: Binary (negative=0 / positive=1) — main_cluster_binary.py
+  Tier 2:
+    If negative → 3-class: sadness / anger / fear
+    If positive → 2-class: joy / love (surprise is not a leaf; it is still
+      "positive" in tier 1, then forced to joy or love in tier 2)
 
-Then chains all 3 models to produce final 6-class predictions.
+Three BERT heads are trained; at inference their outputs are composed into
+dataset label ids 0–4 (and never 5 at tier 2).
 
 Usage:
-  # Train all 3 stages:
   python main_cluster_hierarchical.py train \
     -filename "data/processed/train_inner_emotions_emotion" \
     -val_path "data/processed/val_emotions_emotion.csv" \
@@ -18,7 +19,6 @@ Usage:
     -few_shot_path "prompts/few_shot_examples_emotion.json" \
     -max_iterations 8
 
-  # Evaluate with trained models:
   python main_cluster_hierarchical.py eval \
     -val_path "data/processed/test_emotions_emotion.csv" \
     -binary_model "models/binary_fine_tunned_7_bandit_5" \
@@ -46,17 +46,18 @@ from thompson_sampling import ThompsonSampler
 from random_sampling import RandomSampler
 from LDA import LDATopicModel
 from labeling import Labeling
+from tiered_labels import (
+    EMOTION_TO_BINARY,
+    EMOTION_NAMES,
+    LEAF_DATASET_LABELS,
+    NEG_SUB_TO_ORIG,
+    ORIG_TO_NEG_SUB,
+    ORIG_TO_POS_SUB,
+    POS_SUB_TO_ORIG,
+)
 
 import nltk
 nltk.download("punkt", quiet=True)
-
-# ==================== MAPPINGS ====================
-EMOTION_TO_BINARY = {0: 0, 1: 1, 2: 1, 3: 0, 4: 0, 5: 1}
-ORIG_TO_NEG_SUB = {0: 0, 3: 1, 4: 2}
-ORIG_TO_POS_SUB = {1: 0, 2: 1, 5: 2}
-NEG_SUB_TO_ORIG = {0: 0, 1: 3, 2: 4}
-POS_SUB_TO_ORIG = {0: 1, 1: 2, 2: 5}
-EMOTION_NAMES = {0: "sadness", 1: "joy", 2: "love", 3: "anger", 4: "fear", 5: "surprise"}
 
 
 # ==================== SUB-CLASSIFIER LABELING ====================
@@ -81,11 +82,10 @@ class SubLabeling(Labeling):
             )
         else:
             prompt = (
-                "Classify the positive emotion in this text.\n\n"
+                "The text has positive sentiment. Classify as joy or love.\n\n"
                 "0 = joy (happiness, delight, excitement, gratitude, contentment, cheerfulness)\n"
-                "1 = love (affection, caring, tenderness, romance, feeling loved)\n"
-                "2 = surprise (shock, astonishment, disbelief, something unexpected)\n\n"
-                "Output only the number (0, 1, or 2).\n"
+                "1 = love (affection, caring, tenderness, romance, feeling loved)\n\n"
+                "Output only 0 or 1.\n"
             )
         if examples:
             prompt += "Examples:\n" + examples + "\n\n"
@@ -108,13 +108,16 @@ class SubLabeling(Labeling):
 
     def _extract_label(self, response_text: str) -> str:
         response_text = str(response_text).strip().lower()
-        match = re.search(r'\b([012])\b', response_text)
+        if self.sub_type == "neg_sub":
+            match = re.search(r"\b([012])\b", response_text)
+        else:
+            match = re.search(r"\b([01])\b", response_text)
         if match:
             return match.group(1)
         if self.sub_type == "neg_sub":
             kw = {"sadness": "0", "grief": "0", "anger": "1", "frustration": "1", "fear": "2", "anxiety": "2"}
         else:
-            kw = {"joy": "0", "happy": "0", "love": "1", "affection": "1", "surprise": "2", "shock": "2"}
+            kw = {"joy": "0", "happy": "0", "delight": "0", "love": "1", "affection": "1", "romance": "1"}
         for k, v in kw.items():
             if k in response_text:
                 return v
@@ -125,7 +128,10 @@ class SubLabeling(Labeling):
         if self.sub_type == "neg_sub":
             sys_msg = "You are an emotion classifier. The text expresses a negative emotion. Classify it as: 0=sadness, 1=anger, 2=fear. Output exactly one number."
         else:
-            sys_msg = "You are an emotion classifier. The text expresses a positive emotion. Classify it as: 0=joy, 1=love, 2=surprise. Output exactly one number."
+            sys_msg = (
+                "You are an emotion classifier. The text has positive sentiment. "
+                "Classify it as: 0=joy, 1=love. Output exactly one number."
+            )
 
         messages = [{"role": "system", "content": sys_msg}, {"role": "user", "content": user_prompt}]
         text = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
@@ -156,13 +162,20 @@ def reset_sampler_state():
 
 
 def train_sub_classifier(sub_type, args, filename, preprocessor):
-    """Train a 3-class sub-classifier (neg_sub or pos_sub)."""
-    NUM_LABELS = 3
+    """Train tier-2 sub-classifier: neg_sub (3 classes) or pos_sub (2 classes: joy vs love)."""
+    if sub_type == "neg_sub":
+        num_labels = 3
+        baseline = 1.0 / 3.0
+        answer_pat = r"^[012]$"
+    else:
+        num_labels = 2
+        baseline = 0.5
+        answer_pat = r"^[01]$"
+
     remap = ORIG_TO_NEG_SUB if sub_type == "neg_sub" else ORIG_TO_POS_SUB
     valid_orig_labels = set(remap.keys())
     output_prefix = filename + f"_{sub_type}"
     metric = args.metric
-    baseline = 0.33  # random baseline for 3-class
 
     # Validation: filter + remap
     validation = pd.read_csv(args.val_path)
@@ -181,7 +194,10 @@ def train_sub_classifier(sub_type, args, filename, preprocessor):
     n_cluster = data["label_cluster"].value_counts().count()
     print(f"Training data: {len(data)} samples, {n_cluster} clusters")
 
-    trainer = BertFineTuner(args.model_finetune, None, validation, confidence_threshold=args.confidence_threshold, num_labels=NUM_LABELS)
+    trainer = BertFineTuner(
+        args.model_finetune, None, validation,
+        confidence_threshold=args.confidence_threshold, num_labels=num_labels,
+    )
 
     if args.sampling == "thompson":
         sampler = ThompsonSampler(n_cluster)
@@ -202,7 +218,7 @@ def train_sub_classifier(sub_type, args, filename, preprocessor):
             df["answer"] = df.apply(lambda x: labeler.predict_animal_product(x), axis=1)
             df = df[df["answer"].notna()].copy()
             df["answer"] = df["answer"].astype(str).str.strip()
-            df = df[df["answer"].str.match(r'^[012]$')].copy()
+            df = df[df["answer"].str.match(answer_pat)].copy()
             df["pseudo_label"] = df["answer"].astype(int)
             df["label"] = df["pseudo_label"]
             df["training_text"] = df["title"]
@@ -276,7 +292,7 @@ def train_sub_classifier(sub_type, args, filename, preprocessor):
 
 # ==================== HIERARCHICAL PREDICTOR ====================
 class HierarchicalPredictor:
-    """Chains 3 BERT models for 6-class emotion prediction."""
+    """Chains binary + neg (3-way) + pos (2-way joy/love) BERT models."""
 
     def __init__(self, binary_model_path, neg_sub_model_path, pos_sub_model_path,
                  tokenizer_name="bert-base-uncased", max_length=128):
@@ -292,8 +308,8 @@ class HierarchicalPredictor:
         self.neg_model = BertForSequenceClassification.from_pretrained(neg_sub_model_path, num_labels=3)
         self.neg_model.to(self.device).eval()
 
-        print("Loading positive sub-classifier...")
-        self.pos_model = BertForSequenceClassification.from_pretrained(pos_sub_model_path, num_labels=3)
+        print("Loading positive sub-classifier (joy vs love)...")
+        self.pos_model = BertForSequenceClassification.from_pretrained(pos_sub_model_path, num_labels=2)
         self.pos_model.to(self.device).eval()
         print("All models loaded.")
 
@@ -339,16 +355,26 @@ class HierarchicalPredictor:
         result = self.predict(df)
         true = df[label_col].values
         pred = result["final_label"].values
-        target_names = [EMOTION_NAMES[i] for i in sorted(EMOTION_NAMES.keys())]
+        all_names = [EMOTION_NAMES[i] for i in sorted(EMOTION_NAMES.keys())]
 
-        print("\n=== Hierarchical Classification Report ===")
-        print(classification_report(true, pred, target_names=target_names, zero_division=0))
+        print("\n=== Hierarchical classification (full test set: 6 dataset labels) ===")
+        print(classification_report(true, pred, labels=sorted(EMOTION_NAMES.keys()), target_names=all_names, zero_division=0))
         print(f"Accuracy:    {accuracy_score(true, pred):.4f}")
         print(f"F1 Macro:    {f1_score(true, pred, average='macro', zero_division=0):.4f}")
         print(f"F1 Weighted: {f1_score(true, pred, average='weighted', zero_division=0):.4f}")
 
-        binary_true = np.array([EMOTION_TO_BINARY[l] for l in true])
-        print(f"Binary acc:  {accuracy_score(binary_true, result['binary_pred'].values):.4f}")
+        leaf_ids = sorted(LEAF_DATASET_LABELS)
+        leaf_names = [EMOTION_NAMES[i] for i in leaf_ids]
+        non_surprise = true != 5
+        if non_surprise.any() and (true == 5).any():
+            print("\n=== Same metrics excluding gold-label surprise (tier 2 never predicts surprise) ===")
+            t2, p2 = true[non_surprise], pred[non_surprise]
+            print(classification_report(t2, p2, labels=leaf_ids, target_names=leaf_names, zero_division=0))
+            print(f"Accuracy:    {accuracy_score(t2, p2):.4f}")
+            print(f"F1 Macro:    {f1_score(t2, p2, average='macro', zero_division=0):.4f}")
+
+        binary_true = np.array([EMOTION_TO_BINARY[int(l)] for l in true])
+        print(f"\nTier-1 binary accuracy: {accuracy_score(binary_true, result['binary_pred'].values):.4f}")
         return result
 
 
@@ -392,8 +418,10 @@ def main():
         print("STAGE 1: Binary classification (positive vs negative)")
         print("=" * 60)
         # Run binary pipeline as subprocess
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        binary_script = os.path.join(script_dir, "main_cluster_binary.py")
         binary_cmd = [
-            sys.executable, "main_cluster_binary.py",
+            sys.executable, binary_script,
             "-sampling", args.sampling,
             "-sample_size", str(args.sample_size),
             "-filter_label", str(args.filter_label),

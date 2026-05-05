@@ -1,17 +1,17 @@
-python src/main_cluster.py \
-  -sample_size 150 \
-  -filename "data/processed/train_inner_emotions_joy" \
-  -val_path "data/processed/val_emotions_joy.csv" \
-  -balance False \
-  -sampling "thompson" \
+# From emotions_rec/ with data/processed/*.csv and prompts ready (see COLAB.md).
+python src/main_cluster_hierarchical.py train \
+  -sampling thompson \
+  -sample_size 300 \
   -filter_label True \
-  -model_finetune "bert-base-uncased" \
-  -labeling "qwen" \
-  -model "text" \
-  -baseline 0.5 \
-  -metric "f1_pos" \
+  -model_finetune bert-base-uncased \
+  -labeling qwen \
+  -filename "data/processed/train_inner_emotions_emotion" \
+  -model text \
+  -metric f1_macro \
+  -val_path "data/processed/val_emotions_emotion.csv" \
   -cluster_size 10 \
-  -target_class "joy" \
-  -few_shot_path "prompts/few_shot_examples_joy.json" \
+  -target_class joy \
+  -few_shot_path "prompts/few_shot_examples_emotion.json" \
   -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
-  -max_iterations 4
+  -max_iterations 8 \
+  -confidence_threshold 0.35

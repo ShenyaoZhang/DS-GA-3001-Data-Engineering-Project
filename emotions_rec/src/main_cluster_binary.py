@@ -1,9 +1,9 @@
 """
-Binary Emotion Classification Pipeline (positive vs negative)
+Binary Emotion Classification Pipeline (Tier 1: positive vs negative)
 
-Maps 6-class emotions to binary:
+Maps dair-ai/emotion labels to binary (see tiered_labels.EMOTION_TO_BINARY):
   negative (0): sadness, anger, fear
-  positive (1): joy, love, surprise
+  positive (1): joy, love, surprise (surprise is positive here only; tier 2 then maps to joy/love)
 
 Includes improvements over the base pipeline:
   - Binary Qwen prompts for better pseudo-label accuracy
@@ -43,9 +43,7 @@ from thompson_sampling import ThompsonSampler
 from random_sampling import RandomSampler
 from LDA import LDATopicModel
 from labeling import Labeling
-
-# ---------- binary label map ----------
-EMOTION_TO_BINARY = {0: 0, 1: 1, 2: 1, 3: 0, 4: 0, 5: 1}
+from tiered_labels import EMOTION_TO_BINARY
 
 
 # ---------- Binary-aware Labeling subclass ----------
@@ -98,7 +96,7 @@ class BinaryLabeling(Labeling):
         user_prompt = row["text"]
         messages = [
             {"role": "system",
-             "content": "You are a sentiment classifier. Classify the text as: 0=negative (sadness, anger, fear) or 1=positive (joy, love, surprise). Output exactly one number."},
+             "content": "You are a sentiment classifier. Classify the text as: 0=negative (sadness, anger, fear) or 1=positive (joy, love, surprise). Tier 2 will split positive into joy vs love. Output exactly one number."},
             {"role": "user", "content": user_prompt}
         ]
         text = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
