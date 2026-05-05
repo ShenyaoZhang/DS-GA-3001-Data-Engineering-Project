@@ -14,6 +14,7 @@ python -u src/main_cluster_emotion_binary.py \
   -metric f1_pos \
   -cluster_size 8 \
   -positive_label "love" \
+  -few_shot_path "prompts/few_shot_examples_emotion_love.json" \
   -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
   -max_iterations 3 \
   -num_train_epochs 2 \

@@ -1,51 +1,76 @@
-# Sentiment Classification Pipeline (dair-ai/emotion)
+# Emotions → binary LTS (dair-ai/emotion)
 
-This branch keeps only the sentiment workflow.
+Mirror the **20 Newsgroups / LTS** workflow: prepare data → run `main_cluster`-style training → evaluate checkpoint.
 
-Sentiment labels:
-- `0` negative (sadness, anger, fear)
-- `1` neutral (surprise)
-- `2` positive (joy, love)
+**Task:** binary triage for one target emotion (default `love`) vs all other emotions (`0` = not target, `1` = target).
 
 ## Main files
 
-- `src/main_cluster_sentiment.py` — active-learning training loop
-- `src/eval_sentiment.py` — test-set evaluation
-- `src/sentiment_labels.py` — label mapping
-- `notebooks/emotions_rec_sentiment_repro.ipynb` — end-to-end Colab notebook
+| Step | File |
+|------|------|
+| Prepare CSVs | `scripts/prepare_emotions_binary.py` |
+| Few-shot from train (optional) | `scripts/build_few_shot_emotions.py` |
+| Committed few-shot examples | `prompts/few_shot_examples_emotion_love.json` |
+| Active learning loop | `src/main_cluster_emotion_binary.py` |
+| Evaluation | `src/eval_emotion_binary.py` |
+| Colab notebook | `notebooks/emotions_rec_sentiment_pipeline.ipynb` |
+
+Raw labels in prepared CSVs follow **dair-ai/emotion** ids: `0 sadness, 1 joy, 2 love, 3 anger, 4 fear, 5 surprise`. The training script maps them to binary using `-positive_label`.
 
 ## Quick start (local)
 
-Train:
+Prepare (writes full + smoke splits under `data/processed/`):
 
 ```bash
-python -u src/main_cluster_sentiment.py \
+python -u scripts/prepare_emotions_binary.py --label love
+```
+
+(Optional) Regenerate few-shot from the full train file:
+
+```bash
+python -u scripts/build_few_shot_emotions.py \
+  --train_csv "data/processed/emotions_love_train.csv" \
+  --out "prompts/few_shot_examples_emotion_love.json" \
+  --n_per_class 2
+```
+
+Train (see `run_configs/binary_love_quick_run.txt`):
+
+```bash
+python -u src/main_cluster_emotion_binary.py \
+  -sample_size 200 \
+  -filename "data/processed/emotions_love_smoke_train" \
+  -val_path "data/processed/emotions_love_smoke_validation.csv" \
+  -balance False \
   -sampling thompson \
-  -sample_size 300 \
   -filter_label True \
   -model_finetune bert-base-uncased \
   -labeling qwen \
-  -filename "data/processed/train_inner_emotions_sentiment" \
   -model text \
-  -metric f1_macro \
-  -val_path "data/processed/val_emotions_sentiment.csv" \
-  -cluster_size 10 \
-  -few_shot_path "prompts/few_shot_examples_sentiment.json" \
+  -baseline 0.10 \
+  -metric f1_pos \
+  -cluster_size 8 \
+  -positive_label "love" \
+  -few_shot_path "prompts/few_shot_examples_emotion_love.json" \
   -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
-  -max_iterations 8 \
-  -confidence_threshold 0.35
+  -max_iterations 3 \
+  -num_train_epochs 2 \
+  -max_length 128 \
+  -batch_size 16 \
+  -confidence_threshold 0.40
 ```
-Logs are printed directly to console/notebook output.
 
-Evaluate:
+Evaluate (set `-model_path` to your best checkpoint under `models/`):
 
 ```bash
-python src/eval_sentiment.py \
-  -test_path "data/processed/test_emotions_sentiment.csv" \
-  -model_path "models/sentiment_fine_tunned_0_bandit_0" \
-  -base_model "bert-base-uncased"
+python -u src/eval_emotion_binary.py \
+  -test_path "data/processed/emotions_love_test.csv" \
+  -model_path "models/binary_love_fine_tunned_0_bandit_0" \
+  -target_emotion "love" \
+  -base_model "bert-base-uncased" \
+  -max_length 128
 ```
 
 ## Colab
 
-Use `notebooks/emotions_rec_sentiment_repro.ipynb` and follow `COLAB.md`.
+Open `notebooks/emotions_rec_sentiment_pipeline.ipynb` and follow `COLAB.md`.

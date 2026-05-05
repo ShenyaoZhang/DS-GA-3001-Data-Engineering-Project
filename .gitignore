@@ -23,3 +23,4 @@ emotions_rec/data/*
 !emotions_rec/data/raw/.gitkeep
 !emotions_rec/data/processed/
 !emotions_rec/data/processed/.gitkeep
+.DS_Store

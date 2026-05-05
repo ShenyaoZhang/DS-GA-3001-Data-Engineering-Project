@@ -1,13 +1,19 @@
 # Data directory
 
-Raw data stays empty in Git; `dair-ai/emotion` is loaded via HuggingFace `datasets` in `notebooks/emotions_rec_sentiment_repro.ipynb`.
+Nothing large is committed here. Use `scripts/prepare_emotions_binary.py` (or the Colab notebook) to download **dair-ai/emotion** via Hugging Face `datasets` and write processed CSVs.
 
-## processed/
+## `processed/` outputs (binary `love` example)
 
-After running the notebook with **`TARGET_SLUG = "sentiment"`**, expect:
+After `python -u scripts/prepare_emotions_binary.py --label love`:
 
-- `train_inner_emotions_sentiment.csv`
-- `val_emotions_sentiment.csv`
-- `test_emotions_sentiment.csv`
+| File | Contents |
+|------|----------|
+| `emotions_love_train.csv` | Full train pool: `id`, `title`, `label` (`label` = raw emotion 0–5) |
+| `emotions_love_validation.csv` | Validation (raw 0–5) |
+| `emotions_love_test.csv` | Test (raw 0–5) |
+| `emotions_love_smoke_train.csv` | Small train subset for quick runs |
+| `emotions_love_smoke_validation.csv` | Small val subset |
 
-Runtime artifacts (not tracked) include `*_lda.csv`, `*_training_data.csv`, `*_data_labeled.csv`, and `*_model_results.json` under this folder and `models/` in the experiment root.
+Training maps the target emotion (e.g. `love` → id `2`) to **binary** gold labels on the fly; eval maps test the same way.
+
+Runtime artifacts (not usually tracked): `<filename>_lda.csv`, `*_training_data.csv`, `*_model_results.json`, and checkpoints under `models/`.

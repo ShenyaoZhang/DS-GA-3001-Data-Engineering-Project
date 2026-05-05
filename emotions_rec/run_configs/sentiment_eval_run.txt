@@ -1,7 +1,0 @@
-# From emotions_rec/ after sentiment training is complete.
-python src/eval_sentiment.py \
-  -test_path "data/processed/test_emotions_sentiment.csv" \
-  -model_path "models/sentiment_fine_tunned_0_bandit_0" \
-  -base_model "bert-base-uncased"
-
-# Replace model_path with your best checkpoint from training logs.
