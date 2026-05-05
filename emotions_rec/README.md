@@ -34,11 +34,11 @@ python -u scripts/build_few_shot_emotions.py \
   --n_per_class 2
 ```
 
-Train (see `run_configs/binary_love_quick_run.txt`):
+Train (`run_configs/binary_love_quick_run.txt`; targets ~≤1 hr Colab GPU T4 + High RAM once HF caches are warm):
 
 ```bash
 python -u src/main_cluster_emotion_binary.py \
-  -sample_size 200 \
+  -sample_size 224 \
   -filename "data/processed/emotions_love_smoke_train" \
   -val_path "data/processed/emotions_love_smoke_validation.csv" \
   -balance False \
@@ -47,18 +47,20 @@ python -u src/main_cluster_emotion_binary.py \
   -model_finetune bert-base-uncased \
   -labeling qwen \
   -model text \
-  -baseline 0.10 \
+  -baseline 0.08 \
   -metric f1_pos \
   -cluster_size 8 \
   -positive_label "love" \
   -few_shot_path "prompts/few_shot_examples_emotion_love.json" \
   -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
-  -max_iterations 3 \
-  -num_train_epochs 2 \
+  -max_iterations 5 \
+  -num_train_epochs 3 \
   -max_length 128 \
-  -batch_size 16 \
-  -confidence_threshold 0.40
+  -batch_size 24 \
+  -confidence_threshold 0.38
 ```
+
+If BERT training hits **CUDA OOM** on a **T4**, set **`-batch_size 16`**.
 
 Evaluate (use the checkpoint folder with highest validation **`f1_pos`**; optional **`-run_id`** puts checkpoints under `models/<run_id>/`). Add **`-tune_threshold_val_path`** so F1(pos) matches the calibrated operating point:
 
@@ -66,11 +68,13 @@ Evaluate (use the checkpoint folder with highest validation **`f1_pos`**; option
 python -u src/eval_emotion_binary.py \
   -test_path "data/processed/emotions_love_test.csv" \
   -tune_threshold_val_path "data/processed/emotions_love_validation.csv" \
-  -model_path "models/binary_love_fine_tunned_2_bandit_2" \
+  -model_path "MODEL_DIR_FROM_LOGS" \
   -target_emotion "love" \
   -base_model "bert-base-uncased" \
   -max_length 128
 ```
+
+Use the **`models/binary_*`** folder from your logs with best validation **`f1_pos`**.
 
 ## Reporting “LLM + bandit/clustering vs imbalance”
 

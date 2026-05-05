@@ -2,7 +2,7 @@
 # (no LDA-based cluster strata). With -random_uniform_pool True, `-filter_label` cannot apply
 # the cluster-wise BERT stratification seen in Thompson mode (sampler returns before that logic).
 python -u src/main_cluster_emotion_binary.py \
-  -sample_size 250 \
+  -sample_size 224 \
   -filename "data/processed/emotions_love_smoke_train" \
   -val_path "data/processed/emotions_love_smoke_validation.csv" \
   -balance False \
@@ -12,15 +12,15 @@ python -u src/main_cluster_emotion_binary.py \
   -model_finetune bert-base-uncased \
   -labeling qwen \
   -model text \
-  -baseline 0.05 \
+  -baseline 0.08 \
   -metric f1_pos \
   -cluster_size 8 \
   -positive_label "love" \
   -few_shot_path "prompts/few_shot_examples_emotion_love.json" \
   -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
   -run_id "rand_uniform_llm" \
-  -max_iterations 6 \
+  -max_iterations 5 \
   -num_train_epochs 3 \
   -max_length 128 \
-  -batch_size 16 \
-  -confidence_threshold 0.35
+  -batch_size 24 \
+  -confidence_threshold 0.38
