@@ -1,13 +1,21 @@
-# Data directory
+# Data (`emotions_rec`)
 
-Raw data stays empty in Git; `dair-ai/emotion` is loaded via HuggingFace `datasets` in `notebooks/emotions_rec_repro.ipynb`.
+CSV files are **generated**, not committed. Use:
 
-## processed/
+```bash
+python scripts/prepare_emotions_binary.py --label joy
+```
 
-After running the notebook with **`TARGET_SLUG = "emotion"`**, expect:
+Outputs under `data/processed/` (prefix **`emotions_joy`** when `--label joy`):
 
-- `train_inner_emotions_emotion.csv`
-- `val_emotions_emotion.csv`
-- `test_emotions_emotion.csv`
+| File | Description |
+|------|-------------|
+| `emotions_joy_train.csv` | Full train split, binary labels |
+| `emotions_joy_validation.csv` | Validation |
+| `emotions_joy_test.csv` | Test |
+| `emotions_joy_smoke_train.csv` | Small train subset |
+| `emotions_joy_smoke_validation.csv` | Small val subset |
 
-Runtime artifacts (not tracked) include `*_lda.csv`, `*_training_data.csv`, `*_data_labeled.csv`, and `*_model_results.json` under this folder and `models/` in the experiment root.
+**Active learning:** pass **`-filename`** as the path **without** `.csv` (e.g. `data/processed/emotions_joy_smoke_train`). Pass **`-val_path`** as the full validation CSV path.
+
+Runtime artifacts: `*_lda.csv`, `*_training_data.csv`, `*_model_results.json`, `models/` checkpoints.

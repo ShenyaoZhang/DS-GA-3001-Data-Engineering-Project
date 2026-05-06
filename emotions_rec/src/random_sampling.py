@@ -1,12 +1,18 @@
 from typing import Any
+
 import numpy as np
 import pandas as pd
 
+
 class RandomSampler:
-    def __init__(self, n_bandits):
+    def __init__(self, n_bandits, run_id="", uniform_pool=False, seed=42):
         self.n_bandits = n_bandits
+        self.run_id = (run_id or "").strip()
+        self._pfx = f"{self.run_id}_" if self.run_id else ""
+        self.uniform_pool = uniform_pool
+        self.seed = seed
         try:
-            loaded = np.loadtxt("selected_ids.txt", dtype=str)
+            loaded = np.loadtxt(f"{self._pfx}selected_ids.txt", dtype=str)
             self.selected_ids = set(np.atleast_1d(loaded).tolist())
         except Exception:
             self.selected_ids = set()
@@ -15,7 +21,7 @@ class RandomSampler:
         def get_sample(data, size):
             if data.empty:
                 return pd.DataFrame()
-            return data.sample(min(size, len(data)), random_state=42)
+            return data.sample(min(size, len(data)), random_state=self.seed)
 
         df = df.copy()
         df["id"] = df["id"].astype(str)
@@ -23,6 +29,13 @@ class RandomSampler:
 
         if df.empty:
             raise ValueError("No unlabeled data left to sample from.")
+
+        if self.uniform_pool:
+            sampled = df.sample(min(sample_size, len(df)), random_state=self.seed)
+            self.selected_ids.update(sampled["id"].astype(str).tolist())
+            with open(f"{self._pfx}selected_ids.txt", "w") as f:
+                f.write("\n".join(map(str, sorted(self.selected_ids))))
+            return sampled, "uniform_pool"
 
         unique_clusters = sorted(df["label_cluster"].unique().tolist())
         samples_per_cluster = max(1, int(sample_size / max(1, len(unique_clusters))))
@@ -56,10 +69,10 @@ class RandomSampler:
         else:
             sampled = pd.concat(sampled_data, ignore_index=True)
             if len(sampled) > sample_size:
-                sampled = sampled.sample(sample_size, random_state=42).reset_index(drop=True)
+                sampled = sampled.sample(sample_size, random_state=self.seed).reset_index(drop=True)
 
         self.selected_ids.update(sampled["id"].astype(str).tolist())
-        with open("selected_ids.txt", "w") as f:
+        with open(f"{self._pfx}selected_ids.txt", "w") as f:
             f.write("\n".join(map(str, self.selected_ids)))
 
         return sampled, "random"

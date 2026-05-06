@@ -5,7 +5,6 @@ llama_model/
 .DS_Store
 venv/
 .venv*/
-results/
 log/
 models/
 __pycache__/

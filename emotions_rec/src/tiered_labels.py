@@ -1,15 +1,14 @@
 """
-Label maps for the two-tier emotion pipeline (dair-ai/emotion scheme).
+Label maps for a future multi-stage / 6-class emotions setup (dair-ai/emotion).
+
+Not used by `main_cluster_emotion_binary.py` (current default: one-vs-rest **joy**).
 
 Dataset label ids:
   0 sadness, 1 joy, 2 love, 3 anger, 4 fear, 5 surprise
 
-Tier 1 — binary sentiment (BERT): negative vs positive.
-Tier 2 — fine emotion:
-  If negative → sadness / anger / fear (3-way BERT).
-  If positive  → joy / love only (2-way BERT). Surprise is only used at tier 1
-  (mapped to positive) and is never a tier-2 target; those rows are evaluated
-  as confusions at the leaf if you use the full 6-class test set.
+Reserved mapping:
+  Tier 1 — binary sentiment (BERT): negative vs positive.
+  Tier 2 — fine emotion within branches (see ORIG_TO_* / POS_SUB_*).
 """
 
 # Tier 1: original dataset id → 0 negative, 1 positive

@@ -1,79 +1,39 @@
-# Tiered emotion classification (dair-ai/emotion)
+# Binary emotion — **joy vs rest** (`emotion-rec-joy`)
 
-Two-stage design:
+This package implements **one active-learning pipeline**: binary classification for a single positive emotion (**`joy`** by default) vs all other `dair-ai/emotion` labels. Other emotions (love, sadness, …) can be selected later via **`-positive_label`**; extending to **six simultaneous binary detectors** or full **6-way** classification is follow-on work.
 
-1. **Tier 1** — `src/main_cluster_binary.py`: **negative** vs **positive** (BERT, with optional Qwen pseudo-labels and topic bandits).
-2. **Tier 2** — `src/main_cluster_hierarchical.py`:
-   - If **negative** → **sadness / anger / fear** (3-class BERT).
-   - If **positive** → **joy / love** (2-class BERT).
+## Layout
 
-The **surprise** class in the original dataset is treated as **positive** in tier 1 only; this hierarchy does not emit **surprise** as a leaf label (see `src/tiered_labels.py`).
+| Path | Role |
+|------|------|
+| `scripts/prepare_emotions_binary.py` | Build CSVs from `dair-ai/emotion` (binary labels) |
+| `src/main_cluster_emotion_binary.py` | LDA + Thompson/random sampling + Qwen + BERT |
+| `src/eval_emotion_binary.py` | Evaluate a saved `models/...` checkpoint |
+| `run_configs/binary_joy_*.txt` | Example commands |
 
-## Folder layout
-
-```text
-emotions_rec/
-├── README.md
-├── COLAB.md                      ← Google Colab walkthrough
-├── notebooks/
-│   └── emotions_rec_repro.ipynb  ← data prep + optional train commands
-├── src/
-│   ├── tiered_labels.py          ← all label id maps
-│   ├── main_cluster_binary.py    ← tier 1 training only
-│   ├── main_cluster_hierarchical.py  ← train/eval full cascade
-│   ├── preprocessing.py
-│   ├── LDA.py
-│   ├── labeling.py
-│   ├── fine_tune.py
-│   ├── random_sampling.py
-│   └── thompson_sampling.py
-├── prompts/
-│   └── few_shot_examples_emotion.json   ← produced by the notebook (emotion slug)
-├── data/
-│   └── processed/                ← train_inner_emotions_emotion*.csv (generated)
-└── run_configs/
-    ├── random_run.txt
-    └── thompson_run.txt
-```
-
-## Quick start (local)
-
-From the `emotions_rec` directory, with `data/processed/train_inner_emotions_emotion.csv` and validation CSV in place (see notebook or `data/README.md`):
+## Quick start
 
 ```bash
-python src/main_cluster_hierarchical.py train \
-  -filename "data/processed/train_inner_emotions_emotion" \
-  -val_path "data/processed/val_emotions_emotion.csv" \
-  -few_shot_path "prompts/few_shot_examples_emotion.json" \
-  -hf_model_id "Qwen/Qwen2.5-3B-Instruct" \
-  -max_iterations 8
+cd emotions_rec
+python scripts/prepare_emotions_binary.py --label joy
+python -u src/main_cluster_emotion_binary.py \
+  -filename "data/processed/emotions_joy_smoke_train" \
+  -val_path "data/processed/emotions_joy_smoke_validation.csv" \
+  ...  # see run_configs/binary_joy_quick_run.txt
+python src/eval_emotion_binary.py \
+  -test_path "data/processed/emotions_joy_test.csv" \
+  -model_path "models/<checkpoint_dir>" \
+  -target_emotion joy
 ```
+
+## Sanity check (no GPU training)
 
 ```bash
-python src/main_cluster_hierarchical.py eval \
-  -val_path "data/processed/test_emotions_emotion.csv" \
-  -binary_model "models/binary_fine_tunned_0_bandit_0" \
-  -neg_model "models/neg_sub_fine_tunned_0_bandit_0" \
-  -pos_model "models/pos_sub_fine_tunned_0_bandit_0"
+python scripts/smoke_check_emotions_rec.py
 ```
 
-Replace model paths with your saved checkpoints.
+## Branch
 
-## Google Colab
+Use branch **`emotion-rec-joy`** (rename locally if needed: `git checkout -b emotion-rec-joy`).
 
-See **[COLAB.md](./COLAB.md)** for Drive mounting, Hugging Face login, GPU runtime, and step-by-step cells aligned with `notebooks/emotions_rec_repro.ipynb`.
-
-## Dataset
-
-Loaded from Hugging Face:
-
-```python
-from datasets import load_dataset
-load_dataset("dair-ai/emotion")
-```
-
-No manual download is required.
-
-## Requirements
-
-Install from the repository root `requirements.txt` (`pandas`, `numpy`, `torch`, `transformers`, `datasets`, `scikit-learn`, `nltk`, ...).
+The **`LTS/`** Reuters / Newsgroups-style pipeline is kept at the **main**-aligned **vanilla** copy in this repo and is **not** part of the joy binary workflow.

@@ -5,11 +5,27 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from datasets import Dataset, DatasetDict
 import torch
 import pandas as pd
+import numpy as np
 from torch import nn
 
 
 class BertFineTuner:
-    def __init__(self, model_name: Optional[str], training_data: Optional[pd.DataFrame], test_data: Optional[pd.DataFrame], learning_rate=2e-5, dropout=0.2, confidence_threshold=0.85, num_labels=6):
+    def __init__(
+        self,
+        model_name: Optional[str],
+        training_data: Optional[pd.DataFrame],
+        test_data: Optional[pd.DataFrame],
+        learning_rate=2e-5,
+        dropout=0.2,
+        confidence_threshold=0.85,
+        num_labels=6,
+        max_length=512,
+        num_train_epochs=5,
+        monitor_metric="eval_f1",
+        batch_size=16,
+        results_dir: str = "results",
+        log_dir: str = "log",
+    ):
         self.base_model = model_name
         self.tokenizer = BertTokenizer.from_pretrained(model_name)
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -22,6 +38,12 @@ class BertFineTuner:
         self.weight_decay = 0.01
         self.confidence_threshold = confidence_threshold
         self.num_labels = num_labels
+        self.max_length = max_length
+        self.num_train_epochs = num_train_epochs
+        self.monitor_metric = monitor_metric
+        self.batch_size = batch_size
+        self.results_dir = results_dir
+        self.log_dir = log_dir
 
         model = BertForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
         if dropout:
@@ -30,6 +52,8 @@ class BertFineTuner:
 
         self.model = model
         self.model.to(self.device)
+        self._initial_pretrained_name = model_name  # Reload target when a round rejects the update
+        self._initial_dropout = dropout
 
     def set_clf(self, set_value: bool):
         self.run_clf = set_value
@@ -42,6 +66,19 @@ class BertFineTuner:
 
     def get_base_model(self):
         return self.base_model
+
+    def reset_to_initial_pretrained(self):
+        """Discard in-memory fine-tuned weights after a rejected round."""
+        nm = self._initial_pretrained_name
+        model = BertForSequenceClassification.from_pretrained(nm, num_labels=self.num_labels)
+        d = self._initial_dropout
+        if d:
+            model.config.hidden_dropout_prob = d
+            model.config.attention_probs_dropout_prob = d
+        self.model = model.to(self.device)
+        self.base_model = nm
+        self.trainer = None
+        self.run_clf = False  # inference/filter paths require Trainer.predict()
 
     def _text_col(self, df):
         if "training_text" in df.columns:
@@ -68,7 +105,7 @@ class BertFineTuner:
                 element["text"],
                 padding="max_length",
                 truncation=True,
-                max_length=512
+                max_length=self.max_length
             )
 
         tokenized_data = dataset.map(tokenize_function, batched=True)
@@ -89,7 +126,7 @@ class BertFineTuner:
                 element["text"],
                 padding="max_length",
                 truncation=True,
-                max_length=512
+                max_length=self.max_length
             )
 
         tokenized_data = dataset.map(tokenize_function, batched=True)
@@ -99,22 +136,25 @@ class BertFineTuner:
     def compute_metrics(pred):
         labels = pred.label_ids
         preds = pred.predictions.argmax(-1)
-
-        return {
+        out = {
             "accuracy": accuracy_score(labels, preds),
-
             "precision_weighted": precision_score(labels, preds, average="weighted", zero_division=0),
             "recall_weighted": recall_score(labels, preds, average="weighted", zero_division=0),
             "f1": f1_score(labels, preds, average="weighted", zero_division=0),
             "f1_weighted": f1_score(labels, preds, average="weighted", zero_division=0),
-
             "precision_macro": precision_score(labels, preds, average="macro", zero_division=0),
             "recall_macro": recall_score(labels, preds, average="macro", zero_division=0),
             "f1_macro": f1_score(labels, preds, average="macro", zero_division=0),
         }
+        unique_labels = np.unique(labels)
+        if len(unique_labels) <= 2:
+            out["precision_pos"] = precision_score(labels, preds, average="binary", pos_label=1, zero_division=0)
+            out["recall_pos"] = recall_score(labels, preds, average="binary", pos_label=1, zero_division=0)
+            out["f1_pos"] = f1_score(labels, preds, average="binary", pos_label=1, zero_division=0)
+        return out
 
     def train_data(self, df, still_unbalenced):
-        early_stopping_callback = EarlyStoppingCallback(patience=5, monitor="eval_f1", mode="max", log_dir="./log")
+        early_stopping_callback = EarlyStoppingCallback(patience=5, monitor=self.monitor_metric, mode="max", log_dir=self.log_dir)
         tokenized_data, data_collator = self.create_dataset(df, self.test_data)
 
         # Compute dynamic class weights from label distribution
@@ -130,14 +170,14 @@ class BertFineTuner:
             print(f"Dynamic class weights: {class_weights.tolist()}")
 
         training_args = TrainingArguments(
-            output_dir="results",
+            output_dir=self.results_dir,
             eval_strategy="epoch",
             save_strategy="epoch",
-            metric_for_best_model="eval_f1",
+            metric_for_best_model=self.monitor_metric,
             greater_is_better=True,
-            per_device_train_batch_size=16,
-            per_device_eval_batch_size=16,
-            num_train_epochs=5,
+            per_device_train_batch_size=self.batch_size,
+            per_device_eval_batch_size=self.batch_size,
+            num_train_epochs=self.num_train_epochs,
             learning_rate=self.learning_rate,
             weight_decay=self.weight_decay,
             save_total_limit=2,
@@ -216,11 +256,12 @@ class BertFineTuner:
         if self.trainer is not None:
             self.trainer.save_model(path)
 
-    def update_model(self, model_name, model_acc, save_model: bool):
+    def update_model(self, model_name, model_acc, save_model: bool, record_metric: bool = True):
         if save_model and self.trainer is not None:
             self.save_model(model_name)
 
-        self.last_model_acc = {model_name: model_acc}
+        if record_metric:
+            self.last_model_acc = {model_name: model_acc}
         self.base_model = model_name
 
 
