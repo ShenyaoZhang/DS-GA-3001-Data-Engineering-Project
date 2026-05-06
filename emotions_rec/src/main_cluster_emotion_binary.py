@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import torch
 
+from cluster_validation_metrics import compute_validation_per_cluster
 from LDA import LDATopicModel
 from fine_tune import BertFineTuner
 from labeling import EMOTION_MAP, Labeling
@@ -65,17 +66,26 @@ def to_binary(label_series, target_id):
 
 def load_or_build_lda(filename, cluster_size, preprocessor):
     lda_path = filename + "_lda.csv"
+    lda_pkl = filename + "_lda.pkl"
+    lda_model = None
+
     if os.path.exists(lda_path):
         data = pd.read_csv(lda_path)
         print("using data saved on disk")
+        if os.path.exists(lda_pkl):
+            lda_model = LDATopicModel.load(lda_pkl)
+        else:
+            print("Warning: no LDA pickle found; validation_per_cluster will be skipped. Rebuild LDA to create one.")
     else:
         print("Creating LDA")
         data = pd.read_csv(filename + ".csv")
         data = preprocessor.preprocess_df(data)
-        lda = LDATopicModel(num_topics=cluster_size)
-        data["label_cluster"] = lda.fit_transform(data["clean_title"].to_list())
+        lda_model = LDATopicModel(num_topics=cluster_size)
+        data["label_cluster"] = lda_model.fit_transform(data["clean_title"].to_list())
         data.to_csv(lda_path, index=False)
-    return data, int(data["label_cluster"].nunique())
+        lda_model.save(lda_pkl)
+
+    return data, int(data["label_cluster"].nunique()), lda_model
 
 
 def prepare_validation(path, preprocessor, target_id):
@@ -141,8 +151,11 @@ def run(args):
 
     preprocessor = TextPreprocessor()
     validation = prepare_validation(args.val_path, preprocessor, target_id)
-    data, n_cluster = load_or_build_lda(args.filename, args.cluster_size, preprocessor)
+    data, n_cluster, lda_model = load_or_build_lda(args.filename, args.cluster_size, preprocessor)
     data["label"] = to_binary(data["label"], target_id)
+
+    if lda_model is not None:
+        validation["label_cluster"] = lda_model.transform(validation["clean_title"].to_list())
 
     trainer = BertFineTuner(
         args.model_finetune,
@@ -187,6 +200,10 @@ def run(args):
             print(f"Starting baseline ({args.metric}): {baseline:.6f}")
 
         results, _ = trainer.train_data(df, still_unbalenced=True)
+        if lda_model is not None and "label_cluster" in validation.columns:
+            results["validation_per_cluster"] = compute_validation_per_cluster(
+                trainer, validation, num_labels=2, min_support=5
+            )
         score = results[f"eval_{args.metric}"]
         reward = score - baseline
         print(f"Iteration summary | eval_{args.metric}: {score:.6f} | baseline: {baseline:.6f} | reward: {reward:.6f}")
