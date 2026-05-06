@@ -76,7 +76,7 @@ def main() -> None:
         ok("import torch, transformers")
 
     print(
-        "NOTE: This package targets binary joy vs rest (branch emotion-rec-joy). "
+        "NOTE: This package supports binary one-vs-rest for any emotion label. "
         "Colab: notebooks/emotion_rec_joy_repro.ipynb"
     )
 

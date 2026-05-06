@@ -20,7 +20,7 @@ from labeling import EMOTION_MAP
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Prepare emotions binary CSVs")
-    parser.add_argument("--label", type=str, default="joy", choices=sorted(EMOTION_MAP.keys()))
+    parser.add_argument("--label", type=str, required=True, choices=sorted(EMOTION_MAP.keys()))
     parser.add_argument("--output_dir", type=str, default="data/processed")
     parser.add_argument("--smoke_train_n", type=int, default=1200)
     parser.add_argument("--smoke_val_n", type=int, default=300)
@@ -44,7 +44,8 @@ def split_to_df(split_data, id_offset=0):
 def to_binary(df, target_id):
     out = df.copy()
     out["label"] = out["raw_label"].astype(int).apply(lambda x: 1 if x == target_id else 0)
-    return out[["id", "title", "label"]]
+    # Keep raw_label (dair-ai 6-way id) so training/eval can binarize for any -positive_label.
+    return out[["id", "title", "label", "raw_label"]]
 
 
 def save_csv(df, path):

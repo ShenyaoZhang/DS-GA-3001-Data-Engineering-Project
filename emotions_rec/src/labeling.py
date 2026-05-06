@@ -18,18 +18,39 @@ class Labeling:
     def __init__(
         self,
         label_model="qwen",
-        target_class="joy",
+        target_class=None,
         model_id="Qwen/Qwen2.5-3B-Instruct",
-        few_shot_path=None
+        few_shot_path=None,
+        few_shot_from_csv=None,
+        few_shot_n_per_class=2,
+        few_shot_max_examples=8,
+        few_shot_seed=42,
     ):
         self.label_model = label_model
         self.target_class = target_class
         self.model_id = model_id
         self.few_shot_path = few_shot_path
+        self.few_shot_from_csv = few_shot_from_csv
+        self.few_shot_n_per_class = few_shot_n_per_class
+        self.few_shot_max_examples = few_shot_max_examples
+        self.few_shot_seed = few_shot_seed
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
         self.few_shot_examples = self.load_few_shot_examples()
 
     def load_few_shot_examples(self):
+        if self.few_shot_from_csv and os.path.exists(self.few_shot_from_csv):
+            from few_shot_from_dataset import build_few_shot_examples_from_prepared_csv
+
+            ex = build_few_shot_examples_from_prepared_csv(
+                self.few_shot_from_csv,
+                n_per_class=self.few_shot_n_per_class,
+                max_total=self.few_shot_max_examples,
+                seed=self.few_shot_seed,
+            )
+            print(f"[Labeling] Few-shot: {len(ex)} in-prompt examples from {self.few_shot_from_csv}")
+            return ex
+        if self.few_shot_from_csv and not os.path.exists(self.few_shot_from_csv):
+            print(f"[Labeling] WARN: -few_shot_from_csv missing: {self.few_shot_from_csv}")
         if self.few_shot_path and os.path.exists(self.few_shot_path):
             with open(self.few_shot_path, "r", encoding="utf-8") as f:
                 return json.load(f)

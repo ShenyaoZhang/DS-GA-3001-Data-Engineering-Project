@@ -24,7 +24,7 @@ def parse_args():
         required=True,
         help="Local folder with config.json (checkpoint). On Colab prefer an absolute path under .../emotions_rec/models/...",
     )
-    parser.add_argument("-target_emotion", type=str, default="joy", choices=sorted(EMOTION_MAP.keys()))
+    parser.add_argument("-target_emotion", type=str, required=True, choices=sorted(EMOTION_MAP.keys()))
     parser.add_argument("-base_model", type=str, default="bert-base-uncased")
     parser.add_argument("-batch_size", type=int, default=64)
     parser.add_argument("-max_length", type=int, default=128)
@@ -36,7 +36,8 @@ def prepare_test_data(path, target_id):
     df = pd.read_csv(path)
     df = preprocessor.preprocess_df(df)
     df["training_text"] = df["clean_title"] if "clean_title" in df.columns else df["title"]
-    df["label"] = df["label"].astype(int).apply(lambda x: 1 if x == target_id else 0)
+    src = df["raw_label"] if "raw_label" in df.columns else df["label"]
+    df["label"] = src.astype(int).apply(lambda x: 1 if x == target_id else 0)
     return df
 
 
@@ -83,7 +84,7 @@ def main():
         raise FileNotFoundError(
             f"-model_path is not an existing directory: {model_path!r}\n"
             "Use the folder that contains config.json, e.g.\n"
-            "  /content/drive/MyDrive/DS-GA-3001-Data-Engineering-Project/emotions_rec/models/binary_love_fine_tunned_2_bandit_2\n"
+            "  /path/to/emotions_rec/models/binary_<target>_fine_tunned_<iter>_bandit_<arm>\n"
             "Common mistake: typing odels/ instead of models/ makes Transformers hit huggingface.co/odels/... (404)."
         )
     if not os.path.isfile(os.path.join(model_path, "config.json")):

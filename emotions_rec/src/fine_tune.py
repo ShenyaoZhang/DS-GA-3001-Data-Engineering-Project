@@ -25,6 +25,7 @@ class BertFineTuner:
         batch_size=16,
         results_dir: str = "results",
         log_dir: str = "log",
+        seed: int = 42,
     ):
         self.base_model = model_name
         self.tokenizer = BertTokenizer.from_pretrained(model_name)
@@ -44,6 +45,7 @@ class BertFineTuner:
         self.batch_size = batch_size
         self.results_dir = results_dir
         self.log_dir = log_dir
+        self.seed = seed
 
         model = BertForSequenceClassification.from_pretrained(model_name, num_labels=num_labels)
         if dropout:
@@ -184,7 +186,9 @@ class BertFineTuner:
             logging_steps=10,
             push_to_hub=False,
             load_best_model_at_end=True,
-            report_to=[]
+            report_to=[],
+            seed=self.seed,
+            data_seed=self.seed,
         )
 
         trainer_kwargs = dict(

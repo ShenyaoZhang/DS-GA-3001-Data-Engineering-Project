@@ -1,15 +1,12 @@
 """
-Binary active learning for an underrepresented emotion.
-
-Default task:
-  positive = joy
-  negative = all other emotions
+Binary active learning for a selected emotion (one-vs-rest).
 """
 
 import argparse
 import gc
 import json
 import os
+import random
 
 import numpy as np
 import pandas as pd
@@ -21,6 +18,14 @@ from labeling import EMOTION_MAP, Labeling
 from preprocessing import TextPreprocessor
 from random_sampling import RandomSampler
 from thompson_sampling import ThompsonSampler
+
+
+def set_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 
 def str2bool(v):
@@ -49,9 +54,19 @@ def parse_args():
         "Do NOT use 0.5—validation f1_pos is rarely that high.",
     )
     parser.add_argument("-cluster_size", type=int, default=8)
-    parser.add_argument("-positive_label", type=str, default="joy", choices=sorted(EMOTION_MAP.keys()))
+    parser.add_argument("-positive_label", type=str, required=True, choices=sorted(EMOTION_MAP.keys()))
     parser.add_argument("-hf_model_id", type=str, default="Qwen/Qwen2.5-3B-Instruct")
     parser.add_argument("-few_shot_path", type=str, default=None)
+    parser.add_argument(
+        "-few_shot_from_csv",
+        type=str,
+        default=None,
+        help="Prepared train CSV with title + raw_label; build stratified few-shot Qwen examples (overrides -few_shot_path when set)",
+    )
+    parser.add_argument("-few_shot_n_per_class", type=int, default=2)
+    parser.add_argument("-few_shot_max_examples", type=int, default=8)
+    parser.add_argument("-few_shot_seed", type=int, default=42)
+    parser.add_argument("-seed", type=int, default=42, help="RNG seed (numpy/torch/HF Trainer; few-shot uses -few_shot_seed)")
     parser.add_argument("-max_iterations", type=int, default=3)
     parser.add_argument("-confidence_threshold", type=float, default=0.40)
     parser.add_argument("-num_train_epochs", type=int, default=2)
@@ -81,15 +96,36 @@ def to_binary(label_series, target_id):
     return label_series.astype(int).apply(lambda x: 1 if x == target_id else 0)
 
 
-def load_or_build_lda(filename, cluster_size, preprocessor):
+def merge_raw_label_from_base(data: pd.DataFrame, base_csv: str) -> pd.DataFrame:
+    """Old *_lda.csv caches may lack raw_label; join from the prepared train CSV when present."""
+    if "raw_label" in data.columns or not os.path.isfile(base_csv):
+        return data
+    base = pd.read_csv(base_csv)
+    if "raw_label" not in base.columns:
+        return data
+    out = data.drop(columns=["raw_label"], errors="ignore")
+    return out.merge(base[["id", "raw_label"]], on="id", how="left")
+
+
+def ovr_binary_labels(df: pd.DataFrame, target_id: int) -> pd.Series:
+    """Use original 6-class ids when available; else legacy column `label` (multiclass or binary)."""
+    src = df["raw_label"] if "raw_label" in df.columns else df["label"]
+    return to_binary(src, target_id)
+
+
+def load_or_build_lda(filename, cluster_size, preprocessor, target_id):
     lda_path = filename + "_lda.csv"
+    base_csv = filename + ".csv"
     if os.path.exists(lda_path):
         data = pd.read_csv(lda_path)
         print("using data saved on disk")
+        data = merge_raw_label_from_base(data, base_csv)
+        data["label"] = ovr_binary_labels(data, target_id)
     else:
         print("Creating LDA")
-        data = pd.read_csv(filename + ".csv")
+        data = pd.read_csv(base_csv)
         data = preprocessor.preprocess_df(data)
+        data["label"] = ovr_binary_labels(data, target_id)
         lda = LDATopicModel(num_topics=cluster_size)
         data["label_cluster"] = lda.fit_transform(data["clean_title"].to_list())
         data.to_csv(lda_path, index=False)
@@ -100,7 +136,7 @@ def prepare_validation(path, preprocessor, target_id):
     validation = pd.read_csv(path)
     validation = preprocessor.preprocess_df(validation)
     validation["training_text"] = validation["clean_title"] if "clean_title" in validation.columns else validation["title"]
-    validation["label"] = to_binary(validation["label"], target_id)
+    validation["label"] = ovr_binary_labels(validation, target_id)
     print(f"Validation binary labels: {validation['label'].value_counts().to_dict()}")
     return validation
 
@@ -118,6 +154,10 @@ def label_batch(sample_data, args, target_id):
         target_class=args.positive_label,
         model_id=args.hf_model_id,
         few_shot_path=args.few_shot_path,
+        few_shot_from_csv=args.few_shot_from_csv,
+        few_shot_n_per_class=args.few_shot_n_per_class,
+        few_shot_max_examples=args.few_shot_max_examples,
+        few_shot_seed=args.few_shot_seed,
     )
     labeler.set_model()
     df = labeler.generate_inference_data(sample_data, "clean_title")
@@ -159,6 +199,7 @@ def maybe_filter_confidence(df, trainer, threshold):
 
 
 def run(args):
+    set_seed(args.seed)
     ensure_dirs()
     target_id = EMOTION_MAP[args.positive_label]
     print(f"Target emotion: {args.positive_label} ({target_id})")
@@ -183,8 +224,7 @@ def run(args):
 
     preprocessor = TextPreprocessor()
     validation = prepare_validation(args.val_path, preprocessor, target_id)
-    data, n_cluster = load_or_build_lda(args.filename, args.cluster_size, preprocessor)
-    data["label"] = to_binary(data["label"], target_id)
+    data, n_cluster = load_or_build_lda(args.filename, args.cluster_size, preprocessor, target_id)
 
     trainer = BertFineTuner(
         args.model_finetune,
@@ -198,6 +238,7 @@ def run(args):
         batch_size=args.batch_size,
         results_dir=results_dir,
         log_dir=log_dir,
+        seed=args.seed,
     )
     sampler = create_sampler(args.sampling, n_cluster, args.run_id, args.random_uniform_pool)
     baseline = args.baseline
