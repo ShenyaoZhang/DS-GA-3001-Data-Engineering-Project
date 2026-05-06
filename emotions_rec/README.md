@@ -34,6 +34,6 @@ python scripts/smoke_check_emotions_rec.py
 
 ## Branch
 
-Use branch **`emotion-rec-joy`** (rename locally if needed: `git checkout -b emotion-rec-joy`).
+Work on **`emotion-rec-joy` only** (binary joy pipeline). Do not develop the emotions experiment on other branch names in this repo.
 
-The **`LTS/`** Reuters / Newsgroups-style pipeline is kept at the **main**-aligned **vanilla** copy in this repo and is **not** part of the joy binary workflow.
+The **`LTS/`** tree is a **main**-aligned vanilla Reuters pipeline; it is separate from the joy workflow.
