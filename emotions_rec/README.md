@@ -7,8 +7,8 @@ Runnable **binary** pipeline (target emotion vs rest, default **love**):
 | Piece | Path |
 |--------|------|
 | Prepare HF CSVs | `scripts/prepare_emotions_binary.py` |
-| Active learning + BERT fine-tune | `src/main_cluster_emotion_binary.py` |
-| Test metrics | `src/eval_emotion_binary.py` |
+| Active learning + BERT fine-tune | `LTS/main_cluster_emotion_binary.py` |
+| Test metrics | `LTS/eval_emotion_binary.py` |
 | Colab walkthrough | `notebooks/emotions_rec_sentiment_pipeline.ipynb` |
 
 **Fast verification** (no training, ~seconds):
@@ -26,7 +26,7 @@ From `emotions_rec`:
 
 ```bash
 python scripts/prepare_emotions_binary.py --label love
-python -u src/main_cluster_emotion_binary.py \
+python -u LTS/main_cluster_emotion_binary.py \
   -sample_size 200 \
   -filename "data/processed/emotions_love_smoke_train" \
   -val_path "data/processed/emotions_love_smoke_validation.csv" \
@@ -51,7 +51,7 @@ python -u src/main_cluster_emotion_binary.py \
 Evaluate (set `model_path` to a folder under `models/` that contains `config.json`):
 
 ```bash
-python src/eval_emotion_binary.py \
+python LTS/eval_emotion_binary.py \
   -test_path "data/processed/emotions_love_test.csv" \
   -model_path "models/binary_love_fine_tunned_0_bandit_0" \
   -target_emotion love \

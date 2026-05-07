@@ -16,7 +16,7 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, "src")
+LTS = os.path.join(ROOT, "LTS")
 SCRIPTS = os.path.join(ROOT, "scripts")
 
 
@@ -32,7 +32,7 @@ def ok(msg: str) -> None:
 def main() -> None:
     os.chdir(ROOT)
 
-    for folder, label in [(SRC, "src"), (SCRIPTS, "scripts")]:
+    for folder, label in [(LTS, "LTS"), (SCRIPTS, "scripts")]:
         if not os.path.isdir(folder):
             fail(f"missing {label}/ ({folder})")
         for name in sorted(os.listdir(folder)):
@@ -43,7 +43,7 @@ def main() -> None:
                 py_compile.compile(path, doraise=True)
             except py_compile.PyCompileError as e:
                 fail(f"syntax {path}: {e}")
-    ok("py_compile all .py under src/ and scripts/")
+    ok("py_compile all .py under LTS/ and scripts/")
 
     # prepare script: must resolve labeling without PYTHONPATH (we fixed sys.path in-file)
     r = subprocess.run(
@@ -58,7 +58,7 @@ def main() -> None:
 
     for script in ("eval_emotion_binary.py", "main_cluster_emotion_binary.py"):
         r = subprocess.run(
-            [sys.executable, os.path.join(SRC, script), "--help"],
+            [sys.executable, os.path.join(LTS, script), "--help"],
             cwd=ROOT,
             capture_output=True,
             text=True,

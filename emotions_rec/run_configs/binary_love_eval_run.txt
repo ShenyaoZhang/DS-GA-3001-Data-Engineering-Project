@@ -1,4 +1,4 @@
-python -u src/eval_emotion_binary.py \
+python -u LTS/eval_emotion_binary.py \
   -test_path "data/processed/emotions_love_test.csv" \
   -model_path "models/binary_love_fine_tunned_0_bandit_0" \
   -target_emotion "love" \

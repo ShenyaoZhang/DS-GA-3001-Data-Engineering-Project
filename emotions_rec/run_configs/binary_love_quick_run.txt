@@ -1,6 +1,6 @@
 # Fast binary minority run (~30 mins on Colab T4/V100, depends on queue speed)
 # positive class: love (underrepresented but learnable)
-python -u src/main_cluster_emotion_binary.py \
+python -u LTS/main_cluster_emotion_binary.py \
   -sample_size 200 \
   -filename "data/processed/emotions_love_smoke_train" \
   -val_path "data/processed/emotions_love_smoke_validation.csv" \

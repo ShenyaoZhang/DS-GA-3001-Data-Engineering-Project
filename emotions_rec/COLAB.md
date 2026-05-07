@@ -16,7 +16,7 @@ This checks Python syntax, `import torch` / `transformers`, and `--help` on the 
 2. GPU runtime + Hugging Face token (read) for Qwen.
 3. Run cells in order: clone/pull → install deps → `prepare_emotions_binary` → training → eval.
 
-Training uses `src/main_cluster_emotion_binary.py`; evaluation uses `src/eval_emotion_binary.py`.
+Training uses `LTS/main_cluster_emotion_binary.py`; evaluation uses `LTS/eval_emotion_binary.py`.
 
 ## Sentiment 3-class notebook
 
