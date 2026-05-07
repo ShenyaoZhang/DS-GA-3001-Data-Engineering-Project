@@ -2,6 +2,8 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 
+.hf_smoke_cache/
+
 log/
 emotions_rec/logs/
 results/
