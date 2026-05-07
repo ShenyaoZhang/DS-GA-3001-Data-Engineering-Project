@@ -52,6 +52,12 @@ def parse_args():
     parser.add_argument("-num_train_epochs", type=int, default=2)
     parser.add_argument("-max_length", type=int, default=128)
     parser.add_argument("-batch_size", type=int, default=16)
+    parser.add_argument(
+        "-run_tag",
+        type=str,
+        default="",
+        help="Optional tag (e.g. random). Reuses same pool/LDA; writes separate *_binary_<emotion>_<tag>_*.csv/json, checkpoints, and sampler state files.",
+    )
     return parser.parse_args()
 
 
@@ -93,8 +99,10 @@ def prepare_validation(path, preprocessor, target_id):
     return validation
 
 
-def create_sampler(name, n_cluster):
-    return ThompsonSampler(n_cluster) if name == "thompson" else RandomSampler(n_cluster)
+def create_sampler(name, n_cluster, state_prefix=""):
+    if name == "thompson":
+        return ThompsonSampler(n_cluster, state_prefix=state_prefix)
+    return RandomSampler(n_cluster, state_prefix=state_prefix)
 
 
 def label_batch(sample_data, args, target_id):
@@ -164,9 +172,13 @@ def run(args):
         monitor_metric=f"eval_{args.metric}",
         batch_size=args.batch_size,
     )
-    sampler = create_sampler(args.sampling, n_cluster)
+    tag = (args.run_tag or "").strip()
+    state_prefix = f"{tag}_" if tag else ""
+    sampler = create_sampler(args.sampling, n_cluster, state_prefix=state_prefix)
 
-    output_prefix = f"{args.filename}_binary_{args.positive_label}"
+    output_suffix = f"_{tag}" if tag else ""
+    output_prefix = f"{args.filename}_binary_{args.positive_label}{output_suffix}"
+    ckpt_infix = f"{tag}_" if tag else ""
     training_path = f"{output_prefix}_training_data.csv"
     model_results_path = f"{output_prefix}_model_results.json"
     baseline = args.baseline
@@ -205,7 +217,7 @@ def run(args):
         print(f"Iteration summary | eval_{args.metric}: {score:.6f} | baseline: {baseline:.6f} | reward: {reward:.6f}")
 
         if reward > 0:
-            model_name = f"models/binary_{args.positive_label}_fine_tunned_{i}_bandit_{chosen_bandit}"
+            model_name = f"models/binary_{args.positive_label}_{ckpt_infix}fine_tunned_{i}_bandit_{chosen_bandit}"
             trainer.update_model(model_name, score, save_model=True)
             df.to_csv(training_path, index=False)
             if args.filter_label:

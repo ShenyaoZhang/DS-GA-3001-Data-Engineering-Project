@@ -3,10 +3,11 @@ import numpy as np
 import pandas as pd
 
 class RandomSampler:
-    def __init__(self, n_bandits):
+    def __init__(self, n_bandits, state_prefix=""):
         self.n_bandits = n_bandits
+        self.ids_path = f"{state_prefix}selected_ids.txt" if state_prefix else "selected_ids.txt"
         try:
-            loaded = np.loadtxt("selected_ids.txt", dtype=str)
+            loaded = np.loadtxt(self.ids_path, dtype=str)
             self.selected_ids = set(np.atleast_1d(loaded).tolist())
         except Exception:
             self.selected_ids = set()
@@ -59,7 +60,7 @@ class RandomSampler:
                 sampled = sampled.sample(sample_size, random_state=42).reset_index(drop=True)
 
         self.selected_ids.update(sampled["id"].astype(str).tolist())
-        with open("selected_ids.txt", "w") as f:
+        with open(self.ids_path, "w") as f:
             f.write("\n".join(map(str, self.selected_ids)))
 
         return sampled, "random"
