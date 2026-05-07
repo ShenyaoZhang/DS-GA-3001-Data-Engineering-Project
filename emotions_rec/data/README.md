@@ -14,7 +14,7 @@ This downloads **`dair-ai/emotion`** via HuggingFace **`datasets`** and writes u
 
 | File | Role |
 |------|------|
-| `emotions_love_train.csv` | Full training split (binary labels) |
+| `emotions_love_train.csv` | Full training split (`label` = multiclass emotion id **0–5**) |
 | `emotions_love_validation.csv` | Full validation split |
 | `emotions_love_test.csv` | Test split |
 | `emotions_love_smoke_train.csv` | Small train subset for quick runs |

@@ -18,7 +18,7 @@ import torch
 from cluster_validation_metrics import compute_validation_per_cluster
 from LDA import LDATopicModel
 from fine_tune import BertFineTuner
-from labeling import EMOTION_MAP, Labeling
+from labeling import EMOTION_MAP, Labeling, emotion_labels_to_binary
 from preprocessing import TextPreprocessor
 from random_sampling import RandomSampler
 from thompson_sampling import ThompsonSampler
@@ -60,10 +60,6 @@ def ensure_dirs():
         os.makedirs(path, exist_ok=True)
 
 
-def to_binary(label_series, target_id):
-    return label_series.astype(int).apply(lambda x: 1 if x == target_id else 0)
-
-
 def load_or_build_lda(filename, cluster_size, preprocessor):
     lda_path = filename + "_lda.csv"
     lda_pkl = filename + "_lda.pkl"
@@ -92,7 +88,7 @@ def prepare_validation(path, preprocessor, target_id):
     validation = pd.read_csv(path)
     validation = preprocessor.preprocess_df(validation)
     validation["training_text"] = validation["clean_title"] if "clean_title" in validation.columns else validation["title"]
-    validation["label"] = to_binary(validation["label"], target_id)
+    validation["label"] = emotion_labels_to_binary(validation["label"], target_id)
     print(f"Validation binary labels: {validation['label'].value_counts().to_dict()}")
     return validation
 
@@ -152,7 +148,7 @@ def run(args):
     preprocessor = TextPreprocessor()
     validation = prepare_validation(args.val_path, preprocessor, target_id)
     data, n_cluster, lda_model = load_or_build_lda(args.filename, args.cluster_size, preprocessor)
-    data["label"] = to_binary(data["label"], target_id)
+    data["label"] = emotion_labels_to_binary(data["label"], target_id)
 
     if lda_model is not None:
         validation["label_cluster"] = lda_model.transform(validation["clean_title"].to_list())
@@ -226,7 +222,7 @@ def run(args):
         )
         history.setdefault(str(chosen_bandit), []).append(results)
         with open(model_results_path, "w", encoding="utf-8") as f:
-            json.dump(history, f, indent=2)
+            json.dump(history, f, indent=2, default=str)
 
         if args.sampling == "thompson":
             sampler.update(chosen_bandit if chosen_bandit != "fallback_random" else 0, reward)

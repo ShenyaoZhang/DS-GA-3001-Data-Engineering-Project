@@ -14,6 +14,18 @@ EMOTION_NAMES = {v: k for k, v in EMOTION_MAP.items()}
 NUM_LABELS = len(EMOTION_MAP)
 
 
+def emotion_labels_to_binary(label_series: pd.Series, target_id: int) -> pd.Series:
+    """Map dair-ai/emotion ids (0–5) to binary target-vs-rest.
+
+    CSVs from ``prepare_emotions_binary`` use multiclass ids in ``label``. Legacy exports that
+    already store binary 0/1 are left unchanged so older smoke files still run.
+    """
+    s = label_series.astype(int)
+    if s.min() >= 0 and s.max() <= 1:
+        return s
+    return s.apply(lambda x: 1 if x == target_id else 0)
+
+
 class Labeling:
     def __init__(
         self,

@@ -11,7 +11,7 @@ import torch
 from sklearn.metrics import accuracy_score, classification_report, f1_score, precision_score, recall_score
 from transformers import BertForSequenceClassification, BertTokenizer
 
-from labeling import EMOTION_MAP
+from labeling import EMOTION_MAP, emotion_labels_to_binary
 from preprocessing import TextPreprocessor
 
 
@@ -36,7 +36,7 @@ def prepare_test_data(path, target_id):
     df = pd.read_csv(path)
     df = preprocessor.preprocess_df(df)
     df["training_text"] = df["clean_title"] if "clean_title" in df.columns else df["title"]
-    df["label"] = df["label"].astype(int).apply(lambda x: 1 if x == target_id else 0)
+    df["label"] = emotion_labels_to_binary(df["label"], target_id)
     return df
 
 
