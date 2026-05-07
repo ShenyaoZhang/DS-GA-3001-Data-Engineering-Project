@@ -75,13 +75,6 @@ def main() -> None:
     else:
         ok("import torch, transformers")
 
-    missing_sentiment = not os.path.exists(os.path.join(SRC, "main_cluster_sentiment.py"))
-    if missing_sentiment:
-        print(
-            "NOTE: main_cluster_sentiment.py / eval_sentiment.py are not in this tree; "
-            "use the binary notebook (emotions_rec_sentiment_pipeline.ipynb) or main_cluster_emotion_binary.py."
-        )
-
     print("\nAll quick checks passed. Training still needs GPU + time; this did not run the model.")
 
 
