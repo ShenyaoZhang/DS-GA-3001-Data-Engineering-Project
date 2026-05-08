@@ -501,6 +501,66 @@ def _final_metrics_chart(
     return out_path
 
 
+def _binary_weightedf1_accuracy_chart(
+    pairs: pd.DataFrame, out_path: Path
+) -> Optional[Path]:
+    """Binary-only chart with Weighted F1 and Accuracy (no Macro F1)."""
+    df = pairs[pairs["task_type"] == "binary"].copy()
+    if df.empty:
+        return None
+    df = df.sort_values("split").reset_index(drop=True)
+    splits = df["split"].tolist()
+
+    metrics = [
+        ("Weighted F1", "thompson_best_f1", "random_best_f1"),
+        ("Accuracy", "thompson_best_acc", "random_best_acc"),
+    ]
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.5), sharey=True)
+    x = np.arange(len(splits))
+    width = 0.38
+
+    for ax, (label, t_col, r_col) in zip(axes, metrics):
+        random_vals = [v if pd.notna(v) else np.nan for v in df[r_col].tolist()]
+        thompson_vals = [v if pd.notna(v) else np.nan for v in df[t_col].tolist()]
+        b1 = ax.bar(
+            x - width / 2,
+            random_vals,
+            width,
+            label="Random",
+            color=_BAR_COLORS["random"],
+        )
+        b2 = ax.bar(
+            x + width / 2,
+            thompson_vals,
+            width,
+            label="Thompson (LTS)",
+            color=_BAR_COLORS["thompson"],
+        )
+        ax.set_title(label)
+        ax.set_xticks(x)
+        ax.set_xticklabels(splits)
+        ax.set_ylim(0, 1.05)
+        ax.grid(axis="y", linestyle=":", alpha=0.4)
+        for bars in (b1, b2):
+            for bar in bars:
+                h = bar.get_height()
+                if pd.notna(h):
+                    ax.text(
+                        bar.get_x() + bar.get_width() / 2,
+                        h + 0.012,
+                        f"{h:.2f}",
+                        ha="center",
+                        va="bottom",
+                        fontsize=8,
+                    )
+
+    axes[0].set_ylabel("Best validation score")
+    axes[-1].legend(loc="upper right", framealpha=0.9)
+    fig.suptitle("Binary `earn` triage — Random vs Thompson (Weighted F1 + Accuracy)", fontsize=13)
+    _save_fig(fig, out_path)
+    return out_path
+
+
 def _binary_enrichment_chart(
     pairs: pd.DataFrame, out_path: Path
 ) -> Optional[Path]:
@@ -659,6 +719,11 @@ def make_plots(
     )
     if p1:
         out["binary_final_metrics"] = p1
+    p1b = _binary_weightedf1_accuracy_chart(
+        pairs, figures_dir / "binary_weightedf1_accuracy.png"
+    )
+    if p1b:
+        out["binary_weightedf1_accuracy"] = p1b
     p2 = _final_metrics_chart(
         pairs,
         "multiclass",
